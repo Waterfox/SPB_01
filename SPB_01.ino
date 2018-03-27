@@ -12,32 +12,52 @@ DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, 
 float topIRAvg = 0;
 endstops es;
 char inByte = '0';
+float trayPosStp = 0; //tray position from stepper count
+float trayPosIR = 0; //tray position from IR measurement
+int MODE = 0; // 0: tray level, 1: manual override
 
+
+//**********************************************
 void setup() {
   pinMode(SOLENOID,OUTPUT);
   Serial.begin(115200);
   stepper.begin(RPM, MICROSTEPS);
   stepper.enable();
   es.check_endstops();
-  //stepper.startMove(-MOTOR_STEPS*MICROSTEPS*5); //"+ve" is up"
+
+  //home the stepper motor
+//  while (es.enDown){
+//    unsigned wait_time_micros_1 = stepper.nextAction();
+//    if (wait_time_micros_1 <= 0) {
+//      stepper.startMove(-MOTOR_STEPS*MICROSTEPS); //"+ve" is up
+//    }
+//  }
+//  Serial.println("Tray Initialized");
+//  trayPosStp = 365.0; // lower limit switch is at 365mm
 }
 
 //----------------------------------------------
 void loop() {
   unsigned wait_time_micros = stepper.nextAction();
+
+  //stepper stopped
   if (wait_time_micros <= 0) {
     stepper.disable();
     manual_scroll();
 
-    int setPoint = 240;
-    float trayPos = measure_topIR();
-    int steps = ((setPoint - trayPos)*-50.0);   // 50 steps per mm travel
-    int outsteps = spb_move(steps);
-    Serial.println(trayPos);
+    if (MODE == 0){ // if in auto position mode
+      int setPoint = 240;
+      trayPosIR = measure_topIR();
+      int steps = ((setPoint - trayPosIR)*-50.0);   // 50 steps per mm travel
+      int outsteps = spb_move(steps);
+//      Serial.println(outsteps);
+      trayPosStp = trayPosStp - (outsteps / 50.0); // distance travelled in mm
+      Serial.print("stp pos: ");Serial.println(trayPosStp);
+    }
   }
 
 
-  // (optional) execute other code if we have enough time
+  // //stepper in motion execute other code if we have enough time
   if (wait_time_micros > 100){
     Serial.print("top_ir: ");Serial.println(measure_topIR());
   }
@@ -74,13 +94,16 @@ float topIR2dist(float topVal){
 void manual_scroll(){
   if (Serial.available() > 0) {
     inByte = Serial.read();
-    if (inByte == '8'){
-      stepper.enable();
-      stepper.startMove(200);
+    if (inByte == '5'){
+      MODE = !MODE;
     }
-    else if (inByte == '2'){
-      stepper.enable();
-      stepper.startMove(-200);
+    if (MODE == 1){ // if in manual mode
+      if (inByte == '8'){
+        int outsteps = spb_move(200*2);
+      }
+      else if (inByte == '2'){
+        int outsteps = spb_move(-200*2);
+      }
     }
   }
 }
@@ -103,8 +126,10 @@ int spb_move(int steps){
       stepper.enable();
       stepper.startMove(steps);
       return steps;
-    }  
+    }
+    else return 0;  
   }
+  return 0;
 }
 
 float measure_topIR() {
