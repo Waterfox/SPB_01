@@ -11,6 +11,11 @@
 //Endstop Pins
 #define Z_MIN_PIN          18
 #define Z_MAX_PIN          19
+//Endstop Positions
+#define Z_MIN_POS          365
+#define Z_MAX_POS          187
+
+
 //Stepper Pins
 #define Z_STEP_PIN         46
 #define Z_DIR_PIN          48
@@ -54,5 +59,6 @@ void max_callback();
 void min_callback();
 void manual_scroll();
 int spb_move(int);
+void update_tray_pos(void);
 float measure_topIR();
 float measure_US();
