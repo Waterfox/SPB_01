@@ -31,8 +31,8 @@
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
 #define MOTOR_STEPS 200
 #define RPM 240
-#define MAX_STEPS 500 //max steps in one loop
-#define DEADBAND 300 // deadband steps
+#define MAX_STEPS 300 //max steps in one loop
+#define DEADBAND 130 // deadband steps
 
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
@@ -42,14 +42,17 @@
 //Other pins
 #define SOLENOID 9  //flow valve
 #define US_PWR 10   //turn on ultrasound power
+#define US_PIN A9   //Ultrasound analog
 #define TOP_IR_PIN A4 //top infrared
 #define SIDE_IR_PIN A3 // side infrared
 
 
 float topIR2dist(int);
+float US2dist(int);
 //endstop callbacks - can't be a part of the endstop class to attach interrupt. 
 void max_callback();
 void min_callback();
 void manual_scroll();
 int spb_move(int);
 float measure_topIR();
+float measure_US();

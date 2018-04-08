@@ -14,17 +14,20 @@ endstops es;
 char inByte = '0';
 float trayPosStp = 0; //tray position from stepper count
 float trayPosIR = 0; //tray position from IR measurement
+float trayPosUS = 0; //tray position from Ultrasound measurement
 int MODE = 0; // 0: tray level, 1: manual override
 
 
 //**********************************************
 void setup() {
   pinMode(SOLENOID,OUTPUT);
+  pinMode(US_PWR,OUTPUT);
   Serial.begin(115200);
   stepper.begin(RPM, MICROSTEPS);
   stepper.enable();
   es.check_endstops();
-
+  digitalWrite(SOLENOID,true);
+  digitalWrite(US_PWR,true);
   //home the stepper motor
 //  while (es.enDown){
 //    unsigned wait_time_micros_1 = stepper.nextAction();
@@ -43,23 +46,28 @@ void loop() {
   //stepper stopped
   if (wait_time_micros <= 0) {
     stepper.disable();
+//    Serial.print("top_ir    : ");Serial.println(measure_topIR());
+    Serial.print("ultrasound: ");Serial.print(measure_US()); Serial.print(" top_ir    : ");Serial.println(measure_topIR());
     manual_scroll();
 
     if (MODE == 0){ // if in auto position mode
-      int setPoint = 240;
+      int setPoint = 185;
       trayPosIR = measure_topIR();
-      int steps = ((setPoint - trayPosIR)*-50.0);   // 50 steps per mm travel
+      trayPosUS = measure_US();
+      int steps = ((setPoint - trayPosUS)*-50.0);   // 50 steps per mm travel
       int outsteps = spb_move(steps);
 //      Serial.println(outsteps);
       trayPosStp = trayPosStp - (outsteps / 50.0); // distance travelled in mm
-      Serial.print("stp pos: ");Serial.println(trayPosStp);
+//      Serial.print("stp pos: ");Serial.println(trayPosStp);
     }
   }
 
 
   // //stepper in motion execute other code if we have enough time
   if (wait_time_micros > 100){
-    Serial.print("top_ir: ");Serial.println(measure_topIR());
+//    Serial.print("top_ir    : ");Serial.println(measure_topIR());
+//    Serial.print("ultrasound: ");Serial.println(measure_US());
+    delay(1);
   }
 }
 //------------------------------------------------
@@ -85,9 +93,14 @@ void min_callback(){
   
 }
 
-//convert IR measurement to distance in mm
+//convert IR measurement to distance in mm (distance from sensor)
 float topIR2dist(float topVal){
   return(26734.0*pow(topVal,-0.883));
+}
+
+//conver ultrasound measurement to distance in mm (distance from sensor)
+float US2dist(int usVal){
+  return(0.1466275*usVal + 100.0);   //150.0mm/1023.0 * usVal + 100mm
 }
 
 //Read the serial port and scroll up or down
@@ -138,6 +151,11 @@ float measure_topIR() {
   return topIR2dist(topIRAvg);
 }
 
+
+float measure_US() {
+  int usVal = analogRead(US_PIN);
+  return US2dist(usVal);
+}
   
 
 
