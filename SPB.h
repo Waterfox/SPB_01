@@ -34,10 +34,12 @@
 #define MODE2 12
 
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
-#define MOTOR_STEPS 200
+#define MOTOR_STEPS 200 // steps per rotation
 #define RPM 240
 #define MAX_STEPS 300 //max steps in one loop
 #define DEADBAND 130 // deadband steps
+#define STEPSPERMM 50 //steps per mm of travel
+#define PITCH 4 //mm per rotation
 
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
@@ -50,15 +52,22 @@
 #define US_PIN A9   //Ultrasound analog
 #define TOP_IR_PIN A4 //top infrared
 #define SIDE_IR_PIN A3 // side infrared
+#define ESTOP 6 // estop pin //THESE ARE NOT INTERRUPT PINS CHANGE TO 2
+#define STARTBTN 5 // start button //THESE ARE NOT INTERRUPT PINS CHANGE TO 3
+#define STARTLED 4 // start button LED 
+
+#define SIDEIRTHRESH 1.23 // ADC fraction increase when glass detected
+#define SIDEIRPOS 125  //mm from the top
+#define TUBEPOS 180 //mm tube length
 
 
 float topIR2dist(int);
 float US2dist(int);
-//endstop callbacks - can't be a part of the endstop class to attach interrupt. 
-void max_callback();
-void min_callback();
 void manual_scroll();
 int spb_move(int);
 void update_tray_pos(void);
 float measure_topIR();
+int measure_sideIR();
 float measure_US();
+void home_tray();
+void beer_time();

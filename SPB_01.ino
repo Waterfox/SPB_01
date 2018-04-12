@@ -10,6 +10,7 @@
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
 
 float topIRAvg = 0;
+float sideIR = 0;
 endstops es;
 char inByte = '0';
 float trayPosStp = 0; //tray position from stepper count - measured from the top down
@@ -17,6 +18,11 @@ float trayPosIR = 0; //tray position from IR measurement - measured from the sen
 float trayPosUS = 0; //tray position from Ultrasound measurement - measured from the sensor down
 int lastDirn = 0;
 int MODE = 0; // 0: tray level, 1: manual override
+int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
+
+bool side_detected = false;
+float glassTop = 0; 
+float glassBot = 0;
 
 
 //**********************************************
@@ -27,70 +33,35 @@ void setup() {
   stepper.begin(RPM, MICROSTEPS);
   stepper.enable();
   es.check_endstops();
-  digitalWrite(SOLENOID,true);
-  digitalWrite(US_PWR,true);
+  buttons_init();
+//  digitalWrite(SOLENOID,true);
+  digitalWrite(US_PWR,true);  //turn on the ultrasound
 //  home the stepper motor
-  Serial.println("");
-  Serial.println("Begin homing the tray");
-  while (es.enDown){
-    unsigned wait_time_micros_1 = stepper.nextAction();
-    if (wait_time_micros_1 <= 0) {
-      stepper.startMove(-MOTOR_STEPS*MICROSTEPS); //"+ve" is up
-    }
-  }
-  Serial.println("Tray Initialized"); 
+
+  home_tray();
 }
 
 //----------------------------------------------
 void loop() {
-  unsigned wait_time_micros = stepper.nextAction();
 
-  //stepper stopped
+  check_estop();
+  check_start();
+  
+  unsigned wait_time_micros = stepper.nextAction();
   if (wait_time_micros <= 0) {
     stepper.disable();
     update_tray_pos();
-    Serial.print("stp pos: ");Serial.print(trayPosStp);Serial.print(" ultrasound: ");Serial.print(measure_US()); Serial.print(" top_ir: ");Serial.println(measure_topIR());
     manual_scroll();
-
-    if (MODE == 0){ // if in auto position mode
-      int setPoint = 198;
-      trayPosIR = measure_topIR();
-      trayPosUS = measure_US();
-      int steps = ((setPoint - trayPosIR)*-50.0);   // 50 steps per mm travel
-      lastDirn = spb_move(steps);
-    }
+    Serial.print("stp pos: ");Serial.print(trayPosStp);Serial.print(" ultrasound: ");Serial.print(measure_US()); Serial.print(" top_ir: ");Serial.println(measure_topIR());
+      
   }
+  else delay(1);
 
-
-  // //stepper in motion execute other code if we have enough time
-  if (wait_time_micros > 100){
-    delay(1);
-  }
 }
 //------------------------------------------------
 
 
-//interrupt callbacks can't be class members :S 
-void max_callback(){
-  stepper.stop();
-  stepper.disable();
-  if (digitalRead(Z_MAX_PIN) == true){
-    es.enUp = false;  //disable updward motion
-    trayPosStp = Z_MAX_POS;
-  }
-  else es.enUp=true;
-}
 
-void min_callback(){
-  stepper.stop();
-  stepper.disable();
-  if (digitalRead(Z_MIN_PIN) == true){
-    es.enDown = false;  //disable downward motion
-    trayPosStp = Z_MIN_POS;
-  }
-  else es.enDown=true;
-  
-}
 
 //convert IR measurement to distance in mm (distance from sensor)
 float topIR2dist(float topVal){
@@ -157,11 +128,31 @@ float measure_topIR() {
 //  return topIRAvg;
 }
 
+int measure_sideIR() {
+  return analogRead(SIDE_IR_PIN);
+}
 
 float measure_US() {
   int usVal = analogRead(US_PIN);
   return US2dist(usVal);
 }
   
+
+void home_tray(){
+  Serial.println("");
+  Serial.println("Begin homing the tray");
+  while (es.enDown){
+    unsigned wait_time_micros_1 = stepper.nextAction();
+    if (wait_time_micros_1 <= 0) {
+//      stepper.startMove(-MOTOR_STEPS*MICROSTEPS); //"+ve" is up
+        spb_move(-600);
+    }
+    else {
+      delay(1);
+    }
+  }
+  stepper.disable();
+  Serial.println("Tray Initialized"); 
+}
 
 
