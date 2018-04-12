@@ -71,3 +71,4 @@ int measure_sideIR();
 float measure_US();
 void home_tray();
 void beer_time();
+float filterloop(float);

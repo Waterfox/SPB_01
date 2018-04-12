@@ -51,7 +51,9 @@ void beer_time(){
       
 //    float  trayPos = measure_topIR() -10.0;
       float trayPos = measure_US();
-      int steps = ((setPoint + TUBEPOS - trayPos)*-STEPSPERMM);   // 50 steps per mm travel
+
+      float trayPosFilter = filterloop(trayPos);
+      int steps = ((setPoint + TUBEPOS - trayPosFilter)*-STEPSPERMM);   // 50 steps per mm travel
       lastDirn = spb_move(steps);
     }
   

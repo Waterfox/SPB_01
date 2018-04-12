@@ -9,6 +9,12 @@
 
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
 
+
+#define NZEROS 3
+#define NPOLES 3
+#define GAIN   2.691197539e+01
+
+float xv[NZEROS+1], yv[NPOLES+1];
 float topIRAvg = 0;
 float sideIR = 0;
 endstops es;
@@ -136,7 +142,6 @@ float measure_US() {
   int usVal = analogRead(US_PIN);
   return US2dist(usVal);
 }
-  
 
 void home_tray(){
   Serial.println("");
@@ -154,5 +159,18 @@ void home_tray(){
   stepper.disable();
   Serial.println("Tray Initialized"); 
 }
+
+
+float filterloop(float input_val)
+  { for (;;)
+      { xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; 
+        xv[3] = input_val / GAIN;
+        yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; 
+        yv[3] =   (xv[0] + xv[3]) + 3 * (xv[1] + xv[2])
+                     + (  0.1758789745 * yv[0]) + ( -0.8327215725 * yv[1])
+                     + (  1.3595771657 * yv[2]);
+        return yv[3];
+      }
+  }
 
 
