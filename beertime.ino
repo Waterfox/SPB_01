@@ -48,12 +48,19 @@ void beer_time(){
       stepper.disable();
       update_tray_pos();
   //    Serial.print("stp pos: ");Serial.print(trayPosStp);Serial.print(" ultrasound: ");Serial.print(measure_US()); Serial.print(" top_ir: ");Serial.println(measure_topIR());
-      
-//    float  trayPos = measure_topIR() -10.0;
-      float trayPos = measure_US();
+    float trayPos = 0;  
+    float  trayPosIR = measure_topIR() -10.0;
+    float trayPosUS = measure_US();
 
-      float trayPosFilter = filterloop(trayPos);
-      int steps = ((setPoint + TUBEPOS - trayPosFilter)*-STEPSPERMM);   // 50 steps per mm travel
+//    take the minimum reading as tray position    
+//    if (trayPosIR <trayPosUS) trayPos = trayPosIR;
+//    else trayPos = trayPosUS;
+
+//    Just use the IR sensor
+    trayPos = trayPosIR;
+      
+//      float trayPosFilter = filterloop(trayPos);
+      int steps = ((setPoint + TUBEPOS - trayPos)*-STEPSPERMM);   // 50 steps per mm travel
       lastDirn = spb_move(steps);
     }
   

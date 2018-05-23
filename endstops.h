@@ -19,6 +19,7 @@ public:
  
 #endif
 
+
 //endstop callbacks - can't be a part of the endstop class to attach interrupt. 
 
 void max_callback();

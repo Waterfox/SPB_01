@@ -52,9 +52,11 @@
 #define US_PIN A9   //Ultrasound analog
 #define TOP_IR_PIN A4 //top infrared
 #define SIDE_IR_PIN A3 // side infrared
-#define ESTOP 6 // estop pin //THESE ARE NOT INTERRUPT PINS CHANGE TO 2
+#define ESTOP 3 // estop pin //THESE ARE NOT INTERRUPT PINS CHANGE TO 2
 #define STARTBTN 5 // start button //THESE ARE NOT INTERRUPT PINS CHANGE TO 3
-#define STARTLED 4 // start button LED 
+#define STARTLED 4 // start button LED
+#define LED_PIN 6 // Neopixel pin
+#define NUMPIXELS 26
 
 #define SIDEIRTHRESH 1.23 // ADC fraction increase when glass detected
 #define SIDEIRPOS 125  //mm from the top
@@ -72,3 +74,4 @@ float measure_US();
 void home_tray();
 void beer_time();
 float filterloop(float);
+void set_lights(int);

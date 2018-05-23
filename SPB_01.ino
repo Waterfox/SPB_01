@@ -3,12 +3,14 @@
 #include "SPB.h"
 #include "endstops.h"
 #include "BasicStepperDriver.h"
+#include <Adafruit_NeoPixel.h>
 
 
 
 
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
 
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 #define NZEROS 3
 #define NPOLES 3
@@ -16,6 +18,7 @@ DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, 
 
 float xv[NZEROS+1], yv[NPOLES+1];
 float topIRAvg = 0;
+float USAvg = 0;
 float sideIR = 0;
 endstops es;
 char inByte = '0';
@@ -29,6 +32,7 @@ int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 bool side_detected = false;
 float glassTop = 0; 
 float glassBot = 0;
+int curLightVal = 100;
 
 
 //**********************************************
@@ -43,6 +47,8 @@ void setup() {
 //  digitalWrite(SOLENOID,true);
   digitalWrite(US_PWR,true);  //turn on the ultrasound
 //  home the stepper motor
+  pixels.begin();
+  set_lights(curLightVal);
 
   home_tray();
 }
@@ -94,6 +100,17 @@ void manual_scroll(){
       else if (inByte == '2'){
         lastDirn = spb_move(-200*2);
       }
+      else if (inByte =='7'){
+        curLightVal = curLightVal + 20;
+        if (curLightVal > 254) curLightVal = 254;
+        set_lights(curLightVal);
+      }
+       else if (inByte =='1'){
+        curLightVal = curLightVal - 20;
+        if (curLightVal < 0) curLightVal = 0;
+        set_lights(curLightVal);
+      }
+      
     }
   }
 }
@@ -139,8 +156,9 @@ int measure_sideIR() {
 }
 
 float measure_US() {
-  int usVal = analogRead(US_PIN);
-  return US2dist(usVal);
+  float usVal = analogRead(US_PIN)*0.05 + USAvg*0.95;
+  USAvg = usVal;
+  return US2dist(USAvg);
 }
 
 void home_tray(){
@@ -149,7 +167,6 @@ void home_tray(){
   while (es.enDown){
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
-//      stepper.startMove(-MOTOR_STEPS*MICROSTEPS); //"+ve" is up
         spb_move(-600);
     }
     else {
@@ -173,4 +190,10 @@ float filterloop(float input_val)
       }
   }
 
+void set_lights(int lightVal) {
+   for(int i=0;i<NUMPIXELS;i++){ 
+    pixels.setPixelColor(i,lightVal,lightVal,lightVal); // Moderately bright green color.
+  }
+  pixels.show(); // This sends the updated pixel color to the hardware.
+}
 
