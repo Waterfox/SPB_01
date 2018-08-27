@@ -4,7 +4,8 @@
 #include "endstops.h"
 #include "BasicStepperDriver.h"
 #include <Adafruit_NeoPixel.h>
-
+#include <ros.h>
+#include <std_msgs/UInt16.h>
 
 
 
@@ -23,8 +24,9 @@ float sideIR = 0;
 endstops es;
 char inByte = '0';
 float trayPosStp = 0; //tray position from stepper count - measured from the top down
-float trayPosIR = 0; //tray position from IR measurement - measured from the sensor down
-float trayPosUS = 0; //tray position from Ultrasound measurement - measured from the sensor down
+float surfPosIR = 0; //surface position from IR measurement - measured from the sensor down
+float surfPosUS = 0; //surface position from Ultrasound measurement - measured from the sensor down
+int surfPosCV = 0;
 int lastDirn = 0;
 int MODE = 0; // 0: tray level, 1: manual override
 int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
@@ -34,22 +36,41 @@ float glassTop = 0;
 float glassBot = 0;
 int curLightVal = 100;
 
+ros::NodeHandle  nh;
+
+void cv_cb(const std_msgs::UInt16& lvl_msg){
+  surfPosCV = lvl_msg.data;
+}
+
+ros::Subscriber<std_msgs::UInt16> sub("spb/lvl", cv_cb);
+
 
 //**********************************************
 void setup() {
   pinMode(SOLENOID,OUTPUT);
   pinMode(US_PWR,OUTPUT);
-  Serial.begin(115200);
+//  Serial.begin(115200);
+
+//Init the stepper
   stepper.begin(RPM, MICROSTEPS);
   stepper.enable();
+
+// Init the endstops and buttons
   es.check_endstops();
   buttons_init();
-//  digitalWrite(SOLENOID,true);
-  digitalWrite(US_PWR,true);  //turn on the ultrasound
-//  home the stepper motor
+
+//Init ROS
+  nh.initNode();
+  nh.subscribe(sub);
+
+//turn on the ultrasound  
+  digitalWrite(US_PWR,true);  
+
+  //Turn the Lights On
   pixels.begin();
   set_lights(curLightVal);
 
+  // Home the Tray
   home_tray();
 }
 
@@ -58,13 +79,14 @@ void loop() {
 
   check_estop();
   check_start();
+  nh.spinOnce();
   
   unsigned wait_time_micros = stepper.nextAction();
   if (wait_time_micros <= 0) {
     stepper.disable();
     update_tray_pos();
-    manual_scroll();
-    Serial.print("stp pos: ");Serial.print(trayPosStp);Serial.print(" ultrasound: ");Serial.print(measure_US()); Serial.print(" top_ir: ");Serial.println(measure_topIR());
+//    manual_scroll();
+//    Serial.print("stp pos: ");Serial.print(trayPosStp);Serial.print(" ultrasound: ");Serial.print(measure_US()); Serial.print(" top_ir: ");Serial.println(measure_topIR());
       
   }
   else delay(1);
@@ -87,33 +109,33 @@ float US2dist(int usVal){
 }
 
 //Read the serial port and scroll up or down
-void manual_scroll(){
-  if (Serial.available() > 0) {
-    inByte = Serial.read();
-    if (inByte == '5'){
-      MODE = !MODE;
-    }
-    if (MODE == 1){ // if in manual mode
-      if (inByte == '8'){
-        lastDirn = spb_move(200*2);
-      }
-      else if (inByte == '2'){
-        lastDirn = spb_move(-200*2);
-      }
-      else if (inByte =='7'){
-        curLightVal = curLightVal + 20;
-        if (curLightVal > 254) curLightVal = 254;
-        set_lights(curLightVal);
-      }
-       else if (inByte =='1'){
-        curLightVal = curLightVal - 20;
-        if (curLightVal < 0) curLightVal = 0;
-        set_lights(curLightVal);
-      }
-      
-    }
-  }
-}
+//void manual_scroll(){
+//  if (Serial.available() > 0) {
+//    inByte = Serial.read();
+//    if (inByte == '5'){
+//      MODE = !MODE;
+//    }
+//    if (MODE == 1){ // if in manual mode
+//      if (inByte == '8'){
+//        lastDirn = spb_move(200*2);
+//      }
+//      else if (inByte == '2'){
+//        lastDirn = spb_move(-200*2);
+//      }
+//      else if (inByte =='7'){
+//        curLightVal = curLightVal + 20;
+//        if (curLightVal > 254) curLightVal = 254;
+//        set_lights(curLightVal);
+//      }
+//       else if (inByte =='1'){
+//        curLightVal = curLightVal - 20;
+//        if (curLightVal < 0) curLightVal = 0;
+//        set_lights(curLightVal);
+//      }
+//      
+//    }
+//  }
+//}
 
 //Check endstop conditions and move the stepper motor
 //return direction of steps moved
@@ -161,9 +183,17 @@ float measure_US() {
   return US2dist(USAvg);
 }
 
+//float measure_CV(){
+//  if (Serial.available() > 0) {
+//    inByte = Serial.read();
+//    if (inByte == '$'){
+//      ****************
+//    }
+//}
+
 void home_tray(){
-  Serial.println("");
-  Serial.println("Begin homing the tray");
+//  Serial.println("");
+//  Serial.println("Begin homing the tray");
   while (es.enDown){
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
@@ -174,7 +204,7 @@ void home_tray(){
     }
   }
   stepper.disable();
-  Serial.println("Tray Initialized"); 
+//  Serial.println("Tray Initialized"); 
 }
 
 

@@ -1,19 +1,25 @@
 
 
 void beer_time(){
+
+  // 0. The tray is already lowered
+
+  // Turn on red button LED
   digitalWrite(STARTLED, HIGH);
   
   // 1. Raise the tray ----------------------------
-  Serial.println("Begin raising the tray");
+//  Serial.println("Begin raising the tray");
   int STOPDISTANCE = 190;
   sideIR=measure_sideIR();
   
   while (measure_US() > STOPDISTANCE){
+     nh.spinOnce();
+    
 //    Serial.println(trayPosStp);
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
       update_tray_pos();
-
+      
       //detect the top of the glass ***
       if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
         side_detected = true;
@@ -26,12 +32,15 @@ void beer_time(){
   }
   
   stepper.disable();
+  
   glassBot = trayPosStp - STOPDISTANCE;
+  
 //  int glassHeight = glassTop-glassBot;
   int glassHeight = 165;
-  Serial.print("glass top position is: "); Serial.println(glassTop);
-  Serial.print("glass bottom position is: "); Serial.println(glassBot);
-  Serial.print("glass height is: "); Serial.println(glassTop-glassBot);
+  
+//  Serial.print("glass top position is: "); Serial.println(glassTop);
+//  Serial.print("glass bottom position is: "); Serial.println(glassBot);
+//  Serial.print("glass height is: "); Serial.println(glassTop-glassBot);
   
 
   //2. Begin filling! --------------------------------
@@ -42,25 +51,33 @@ void beer_time(){
   
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
     unsigned wait_time_micros = stepper.nextAction();
-
+    nh.spinOnce();
     //stepper stopped
     if (wait_time_micros <= 0) {
-      stepper.disable();
+      
+//      stepper.disable();
       update_tray_pos();
   //    Serial.print("stp pos: ");Serial.print(trayPosStp);Serial.print(" ultrasound: ");Serial.print(measure_US()); Serial.print(" top_ir: ");Serial.println(measure_topIR());
-    float trayPos = 0;  
-    float  trayPosIR = measure_topIR() -10.0;
-    float trayPosUS = measure_US();
+      float surfPos = 0;  
+//      surfPosIR = measure_topIR() -10.0;
+//      surfPosUS = measure_US();
+//    float surfPosCV = measure_CV();
 
 //    take the minimum reading as tray position    
 //    if (trayPosIR <trayPosUS) trayPos = trayPosIR;
 //    else trayPos = trayPosUS;
 
 //    Just use the IR sensor
-    trayPos = trayPosIR;
+//    trayPos = trayPosIR;
+
+//    Just use the US sensor
+//    surfPos = surfPosUS;
+
+//    Use the CV reading
+      surfPos = surfPosCV;
       
 //      float trayPosFilter = filterloop(trayPos);
-      int steps = ((setPoint + TUBEPOS - trayPos)*-STEPSPERMM);   // 50 steps per mm travel
+      int steps = ((setPoint + TUBEPOS - surfPos)*-STEPSPERMM);   // 50 steps per mm travel
       lastDirn = spb_move(steps);
     }
   

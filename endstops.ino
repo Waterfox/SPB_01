@@ -81,7 +81,7 @@ void check_start(){
 
 void estop_callback(){
   if (digitalRead(ESTOP)== true){
-    Serial.println("ESTOP Pressed");
+//    Serial.println("ESTOP Pressed");
     //turn off stepper and solenoid
     stepper.stop();
     stepper.disable();
@@ -89,13 +89,13 @@ void estop_callback(){
     state = 0; //e-stopped
   }
   else {
-    Serial.println("ESTOP Released");
+//    Serial.println("ESTOP Released");
     state = 1; //waiting
   }
 }
 
 void start_callback(){
-  Serial.println("Start Callback");
+//  Serial.println("Start Callback");
   if (state ==1){
 //      beer_time();  //intiate pouring process
       return;

@@ -36,8 +36,8 @@
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
 #define MOTOR_STEPS 200 // steps per rotation
 #define RPM 240
-#define MAX_STEPS 300 //max steps in one loop
-#define DEADBAND 130 // deadband steps
+#define MAX_STEPS 80 //max steps in one loop
+#define DEADBAND 50 // deadband steps
 #define STEPSPERMM 50 //steps per mm of travel
 #define PITCH 4 //mm per rotation
 
@@ -71,6 +71,7 @@ void update_tray_pos(void);
 float measure_topIR();
 int measure_sideIR();
 float measure_US();
+float measure_CV();
 void home_tray();
 void beer_time();
 float filterloop(float);
