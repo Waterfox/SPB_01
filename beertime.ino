@@ -78,7 +78,9 @@ void beer_time(){
       
 //      float trayPosFilter = filterloop(trayPos);
       int steps = ((setPoint + TUBEPOS - surfPos)*-STEPSPERMM);   // 50 steps per mm travel
-      lastDirn = spb_move(steps);
+      if (steps < 0) {
+        lastDirn = spb_move(steps);
+      }
     }
   
   

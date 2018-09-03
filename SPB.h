@@ -35,7 +35,7 @@
 
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
 #define MOTOR_STEPS 200 // steps per rotation
-#define RPM 240
+#define RPM 240 // 240 max
 #define MAX_STEPS 80 //max steps in one loop
 #define DEADBAND 50 // deadband steps
 #define STEPSPERMM 50 //steps per mm of travel
