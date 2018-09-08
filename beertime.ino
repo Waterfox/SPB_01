@@ -43,7 +43,7 @@ void beer_time(){
 
   if (side_detected) {glassHeight = glassTop-glassBot;}
   else {glassHeight = 165;}
-  gh_msg.data = glassHeight;
+  
 
 
   //2. Begin filling! --------------------------------
@@ -61,6 +61,14 @@ void beer_time(){
       
       update_tray_pos();
       publish_all(); 
+
+      //Stop if there is too much foam!
+      if (ir_msg.data < trayPosStp - glassHeight + 10){ 
+        //--If foam is within 10cm from top of glass, break 
+        nh.loginfo("Foam Alert!");
+        break;
+      }
+      
 //    Use the CV reading
       surfPos = surfPosCV;
       

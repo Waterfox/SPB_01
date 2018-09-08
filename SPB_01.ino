@@ -79,17 +79,22 @@ ros::Subscriber<std_msgs::UInt16> sub_led("spb/cmd_led", cmd_led_cb);
 std_msgs::UInt16 us_msg;
 std_msgs::UInt16 ir_msg;
 std_msgs::UInt16 gh_msg;
+std_msgs::UInt16 tp_msg;
 ros::Publisher pubUS("spb/us", &us_msg);
 ros::Publisher pubIR("spb/ir", &ir_msg);
 ros::Publisher pubGH("spb/glass_height", &gh_msg);
+ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 
 
 void publish_all(void) {
   us_msg.data = measure_US();
   ir_msg.data = measure_topIR();
+  gh_msg.data = glassHeight;
+  tp_msg.data = trayPosStp;
   pubUS.publish(&us_msg);
   pubIR.publish(&ir_msg);
   pubGH.publish(&gh_msg);
+  pubTP.publish(&tp_msg);
 }
 //**********************************************
 void setup() {
@@ -114,6 +119,7 @@ void setup() {
   nh.advertise(pubUS);
   nh.advertise(pubIR);
   nh.advertise(pubGH);
+  nh.advertise(pubTP);
 
 //turn on the ultrasound  
   digitalWrite(US_PWR,true);  
