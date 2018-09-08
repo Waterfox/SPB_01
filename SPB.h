@@ -79,3 +79,6 @@ void home_tray();
 void beer_time();
 float filterloop(float);
 void set_lights(int);
+void publish_all(void);
+
+

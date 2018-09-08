@@ -8,7 +8,7 @@ void beer_time(){
   digitalWrite(STARTLED, HIGH);
   
   // 1. Raise the tray ----------------------------
-
+  nh.loginfo("Raising the Tray");
   //baseline side IR measurement
   sideIR=measure_sideIR();
 
@@ -39,14 +39,15 @@ void beer_time(){
   stepper.disable();
 
   //the bottom of the glass location based on
-//  glassBot = trayPosStp - STOPDISTANCE;
-  
-//  glassHeight = glassTop-glassBot;
-  glassHeight = 165;
-  
+  glassBot = trayPosStp - STOPDISTANCE;
+
+  if (side_detected) {glassHeight = glassTop-glassBot;}
+  else {glassHeight = 165;}
+  gh_msg.data = glassHeight;
 
 
   //2. Begin filling! --------------------------------
+  nh.loginfo("Begin filling!");
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
   
@@ -59,8 +60,7 @@ void beer_time(){
     if (wait_time_micros <= 0) {
       
       update_tray_pos();
-      surfPos = 0;  
-
+      publish_all(); 
 //    Use the CV reading
       surfPos = surfPosCV;
       
@@ -76,8 +76,10 @@ void beer_time(){
   digitalWrite(SOLENOID,false);  //Close the solenoid valve
 
 //  3. Lower the Tray -------------------------------------
+  nh.loginfo("Lowering the tray");
   home_tray();
   digitalWrite(STARTLED, LOW);
+  nh.loginfo("Process complete");
   
 }
 
