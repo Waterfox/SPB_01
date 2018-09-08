@@ -37,7 +37,7 @@
 #define MOTOR_STEPS 200 // steps per rotation
 #define RPM 240 // 240 max
 #define MAX_STEPS 80 //max steps in one loop
-#define DEADBAND 50 // deadband steps
+#define DEADBAND 15 // deadband steps
 #define STEPSPERMM 50 //steps per mm of travel
 #define PITCH 4 //mm per rotation
 
@@ -61,6 +61,9 @@
 #define SIDEIRTHRESH 1.23 // ADC fraction increase when glass detected
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
+#define STOPDISTANCE 190.0 // How far to stop the bottom of the glass  (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
+#define SETPOINT 15  // the tube will be X mm from surface
+#define SURFOFFSET 40 // fill the glass this far from the glass top
 
 
 float topIR2dist(int);

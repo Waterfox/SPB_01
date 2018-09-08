@@ -96,7 +96,7 @@ void estop_callback(){
 
 void start_callback(){
 //  Serial.println("Start Callback");
-  if (state ==1){
+  if (state == 1){
 //      beer_time();  //intiate pouring process
       return;
   }

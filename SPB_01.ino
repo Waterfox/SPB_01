@@ -13,27 +13,26 @@ DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, 
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
-#define NZEROS 3
-#define NPOLES 3
-#define GAIN   2.691197539e+01
 
-float xv[NZEROS+1], yv[NPOLES+1];
 float topIRAvg = 0;
 float USAvg = 0;
 float sideIR = 0;
 endstops es;
 char inByte = '0';
 float trayPosStp = 0; //tray position from stepper count - measured from the top down
-float surfPosIR = 0; //surface position from IR measurement - measured from the sensor down
-float surfPosUS = 0; //surface position from Ultrasound measurement - measured from the sensor down
-int surfPosCV = 0;
+//float surfPosIR = 0; //surface position from IR measurement - measured from the sensor down
+//float surfPosUS = 0; //surface position from Ultrasound measurement - measured from the sensor down
+int surfPosCV = 0;  //surface position from computer vision output
+int surfPos = 0;  //surface position used in control calculation
+
 int lastDirn = 0;
-int MODE = 0; // 0: tray level, 1: manual override
-int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
+int MODE = 0; // 0: tray level, 1: manual override -- NOT USED
+int state = 0; //0: Estopped, 1:Waiting, 2:Pouring -- NOT USED
 
 bool side_detected = false;
-float glassTop = 0; 
-float glassBot = 0;
+short glassTop = 0; 
+short glassBot = 0;
+short glassHeight = 165;
 int curLightVal = 100;
 
 ros::NodeHandle  nh;
@@ -49,7 +48,7 @@ ros::Subscriber<std_msgs::UInt16> sub("spb/lvl", cv_cb);
 void setup() {
   pinMode(SOLENOID,OUTPUT);
   pinMode(US_PWR,OUTPUT);
-//  Serial.begin(115200);
+
 
 //Init the stepper
   stepper.begin(RPM, MICROSTEPS);
@@ -183,16 +182,8 @@ float measure_US() {
   return US2dist(USAvg);
 }
 
-//float measure_CV(){
-//  if (Serial.available() > 0) {
-//    inByte = Serial.read();
-//    if (inByte == '$'){
-//      ****************
-//    }
-//}
 
 void home_tray(){
-//  Serial.println("");
 //  Serial.println("Begin homing the tray");
   while (es.enDown){
     unsigned wait_time_micros_1 = stepper.nextAction();
@@ -208,22 +199,10 @@ void home_tray(){
 }
 
 
-float filterloop(float input_val)
-  { for (;;)
-      { xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; 
-        xv[3] = input_val / GAIN;
-        yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; 
-        yv[3] =   (xv[0] + xv[3]) + 3 * (xv[1] + xv[2])
-                     + (  0.1758789745 * yv[0]) + ( -0.8327215725 * yv[1])
-                     + (  1.3595771657 * yv[2]);
-        return yv[3];
-      }
-  }
-
 void set_lights(int lightVal) {
    for(int i=0;i<NUMPIXELS;i++){ 
-    pixels.setPixelColor(i,lightVal,lightVal,lightVal); // Moderately bright green color.
+    pixels.setPixelColor(i,lightVal,lightVal,lightVal); 
   }
-  pixels.show(); // This sends the updated pixel color to the hardware.
+  pixels.show(); 
 }
 
