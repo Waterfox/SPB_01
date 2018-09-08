@@ -9,11 +9,16 @@ void beer_time(){
   
   // 1. Raise the tray ----------------------------
 //  Serial.println("Begin raising the tray");
-  int STOPDISTANCE = 190;
+  float STOPDISTANCE = 190.0;
+  //initial side IR measurement
   sideIR=measure_sideIR();
-  
+//  float lastUS;
+//  lastUS = measure_US();
   while (measure_US() > STOPDISTANCE){
-     nh.spinOnce();
+//  while (lastUS > STOPDISTANCE){
+//  while ((trayPosStp) > STOPDISTANCE){
+//while (true){
+//     nh.spinOnce();
     
 //    Serial.println(trayPosStp);
     unsigned wait_time_micros_1 = stepper.nextAction();
@@ -29,6 +34,7 @@ void beer_time(){
       lastDirn = spb_move(200);
     }
     else delay(1);
+//    lastUS = measure_US();
   }
   
   stepper.disable();
@@ -41,13 +47,16 @@ void beer_time(){
 //  Serial.print("glass top position is: "); Serial.println(glassTop);
 //  Serial.print("glass bottom position is: "); Serial.println(glassBot);
 //  Serial.print("glass height is: "); Serial.println(glassTop-glassBot);
-  
+
+//  digitalWrite(STARTLED, LOW);
+//  delay(1000);
+//  digitalWrite(STARTLED, HIGH);
 
   //2. Begin filling! --------------------------------
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
   int setPoint = 15; // the tube will be X mm from surface
-  int SURFOFFSET = 70; // fill the glass this far from the glass top
+  int SURFOFFSET = 30; // fill the glass this far from the glass top
   
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
     unsigned wait_time_micros = stepper.nextAction();
