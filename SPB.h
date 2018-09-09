@@ -29,6 +29,7 @@
 
 //Stepper Driver
 #include "DRV8825.h"
+#include "A4988.h"
 #define MODE0 10
 #define MODE1 11
 #define MODE2 12
@@ -44,7 +45,7 @@
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
 // 1=full step, 2=half step etc.
-#define MICROSTEPS 1
+#define MICROSTEPS 16
 
 //Other pins
 #define SOLENOID 9  //flow valve
@@ -64,7 +65,8 @@
 #define STOPDISTANCE 190.0 // How far to stop the bottom of the glass  (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
 #define SETPOINT 15  // the tube will be X mm from surface
 #define SURFOFFSET 40 // fill the glass this far from the glass top
-
+#define TPUB1 300 //
+#define TPUB2 500 //
 
 float topIR2dist(int);
 float US2dist(int);

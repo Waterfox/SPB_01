@@ -21,7 +21,7 @@ void beer_time(){
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
       update_tray_pos();
-//      publish_sensors();
+      publish_sensors();
 //      publish_tray();
       
       //detect the top of the glass ***
@@ -62,7 +62,7 @@ void beer_time(){
     if (wait_time_micros <= 0) {
       
       update_tray_pos();
-//      publish_sensors(); 
+      publish_sensors(); 
 //      publish_tray();
 
       //Stop if there is too much foam!

@@ -13,7 +13,8 @@
  */
 
 
-DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
+//DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
+A4988 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -40,6 +41,9 @@ short glassBot = 0;
 short glassHeight = 165;
 int curLightVal = 100;
 
+long pub_timer1 = 0;
+long pub_timer2 = 0;
+
 ros::NodeHandle  nh;
 
 
@@ -52,7 +56,7 @@ void cmd_cb(const std_msgs::UInt16& cmd_msg){
   cmdPosStp = cmd_msg.data;
   // if the cmd value is not zero and in range
   if (cmdPosStp != 0 && cmdPosStp > Z_MAX_POS && cmdPosStp < Z_MIN_POS ) {
-    while (abs(cmdPosStp - trayPosStp) > 5){
+    while (abs(cmdPosStp - trayPosStp) > 1){
       unsigned wait_time_micros = stepper.nextAction();
       if (wait_time_micros <= 0) {
         update_tray_pos();
@@ -92,17 +96,25 @@ ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 
 
 void publish_sensors(void) {
-  us_msg.data = int(measure_US());
-  ir_msg.data = int(measure_topIR());
-  gh_msg.data = int(glassHeight);
-  pubUS.publish(&us_msg);
-  pubIR.publish(&ir_msg);
-  pubGH.publish(&gh_msg);
+  long t1 = millis();
+  if (t1 > pub_timer1 + TPUB1){
+    us_msg.data = int(measure_US());
+    ir_msg.data = int(measure_topIR());
+    gh_msg.data = int(glassHeight);
+    pubUS.publish(&us_msg);
+    pubIR.publish(&ir_msg);
+    pubGH.publish(&gh_msg);
+    pub_timer1 = t1;
+  }
 }
 
 void publish_tray(void) {
-  tp_msg.data = int(trayPosStp);
-  pubTP.publish(&tp_msg);
+  long t2 = millis();
+  if (t2 > pub_timer2 + TPUB2){
+    tp_msg.data = int(trayPosStp);
+    pubTP.publish(&tp_msg);
+    pub_timer2 = t2;
+  }
 }
 //**********************************************
 void setup() {
@@ -148,7 +160,7 @@ void loop() {
 
   check_estop();
   check_start();
-//  publish_sensors();
+  publish_sensors();
   nh.spinOnce();
   
   unsigned wait_time_micros = stepper.nextAction();
@@ -183,17 +195,17 @@ int spb_move(int steps){
   if (abs(steps) > DEADBAND){
     if (steps > MAX_STEPS && es.enUp == true){
         stepper.enable();
-        stepper.startMove(MAX_STEPS);
+        stepper.startMove(-MAX_STEPS);
         return 1;
     }
     else if(steps < -MAX_STEPS && es.enDown == true){
         stepper.enable();
-        stepper.startMove(-MAX_STEPS);
+        stepper.startMove(+MAX_STEPS);
         return -1;
     }
     else if ((steps>0 && es.enUp ==true) || (steps<0 && es.enDown == true)){
       stepper.enable();
-      stepper.startMove(steps);
+      stepper.startMove(-steps);
       return ((steps > 0) - (steps < 0)); 
     }
     else return 0;  
@@ -204,7 +216,7 @@ int spb_move(int steps){
 void update_tray_pos(void){
     trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 50.0); // distance travelled in mm
     stepper.step_count = 0;
-//    publish_tray();
+    publish_tray();
 }
 
 float measure_topIR() {
@@ -228,7 +240,6 @@ float measure_US() {
 void home_tray(){
 
   while (es.enDown){
-//    nh.spinOnce();
     update_tray_pos();
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
@@ -237,6 +248,7 @@ void home_tray(){
     else {
       delay(1);
     }
+    nh.spinOnce();
   }
   stepper.disable();
 //  Serial.println("Tray Initialized"); 
