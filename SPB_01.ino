@@ -195,17 +195,17 @@ int spb_move(int steps){
   if (abs(steps) > DEADBAND){
     if (steps > MAX_STEPS && es.enUp == true){
         stepper.enable();
-        stepper.startMove(-MAX_STEPS);
+        stepper.startMove(+MAX_STEPS);
         return 1;
     }
     else if(steps < -MAX_STEPS && es.enDown == true){
         stepper.enable();
-        stepper.startMove(+MAX_STEPS);
+        stepper.startMove(-MAX_STEPS);
         return -1;
     }
     else if ((steps>0 && es.enUp ==true) || (steps<0 && es.enDown == true)){
       stepper.enable();
-      stepper.startMove(-steps);
+      stepper.startMove(steps);
       return ((steps > 0) - (steps < 0)); 
     }
     else return 0;  
