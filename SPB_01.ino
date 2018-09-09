@@ -8,6 +8,9 @@
 #include <std_msgs/UInt16.h>
 #include <std_msgs/Bool.h>
 
+/*You must change the baud rate to 500000 in line 81 or ArduinoHardware.h
+ * rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
+ */
 
 
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
@@ -49,15 +52,17 @@ void cmd_cb(const std_msgs::UInt16& cmd_msg){
   cmdPosStp = cmd_msg.data;
   // if the cmd value is not zero and in range
   if (cmdPosStp != 0 && cmdPosStp > Z_MAX_POS && cmdPosStp < Z_MIN_POS ) {
-    while (abs(cmdPosStp - trayPosStp) > DEADBAND){
+    while (abs(cmdPosStp - trayPosStp) > 5){
       unsigned wait_time_micros = stepper.nextAction();
       if (wait_time_micros <= 0) {
         update_tray_pos();
         int steps = ((cmdPosStp - trayPosStp)*-STEPSPERMM);
         lastDirn = spb_move(steps);
       }
+      else {delay(1);}
     }
   }
+  stepper.disable();
 }
 
 void cmd_valve_cb(const std_msgs::Bool& cmd_valve_msg){
@@ -86,14 +91,17 @@ ros::Publisher pubGH("spb/glass_height", &gh_msg);
 ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 
 
-void publish_all(void) {
-  us_msg.data = measure_US();
-  ir_msg.data = measure_topIR();
-  gh_msg.data = glassHeight;
-  tp_msg.data = trayPosStp;
+void publish_sensors(void) {
+  us_msg.data = int(measure_US());
+  ir_msg.data = int(measure_topIR());
+  gh_msg.data = int(glassHeight);
   pubUS.publish(&us_msg);
   pubIR.publish(&ir_msg);
   pubGH.publish(&gh_msg);
+}
+
+void publish_tray(void) {
+  tp_msg.data = int(trayPosStp);
   pubTP.publish(&tp_msg);
 }
 //**********************************************
@@ -110,6 +118,17 @@ void setup() {
   es.check_endstops();
   buttons_init();
 
+  //turn on the ultrasound  
+  digitalWrite(US_PWR,true);  
+
+  //Turn the Lights On
+  pixels.begin();
+  set_lights(curLightVal);
+
+  // Home the Tray
+//  nh.loginfo("Home the tray");
+  home_tray();
+
 //Init ROS
   nh.initNode();
   nh.subscribe(sub_cv);
@@ -121,15 +140,7 @@ void setup() {
   nh.advertise(pubGH);
   nh.advertise(pubTP);
 
-//turn on the ultrasound  
-  digitalWrite(US_PWR,true);  
 
-  //Turn the Lights On
-  pixels.begin();
-  set_lights(curLightVal);
-
-  // Home the Tray
-  home_tray();
 }
 
 //----------------------------------------------
@@ -137,7 +148,7 @@ void loop() {
 
   check_estop();
   check_start();
-  publish_all();
+//  publish_sensors();
   nh.spinOnce();
   
   unsigned wait_time_micros = stepper.nextAction();
@@ -193,6 +204,7 @@ int spb_move(int steps){
 void update_tray_pos(void){
     trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 50.0); // distance travelled in mm
     stepper.step_count = 0;
+//    publish_tray();
 }
 
 float measure_topIR() {
@@ -214,8 +226,10 @@ float measure_US() {
 
 
 void home_tray(){
-//  Serial.println("Begin homing the tray");
+
   while (es.enDown){
+//    nh.spinOnce();
+    update_tray_pos();
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
         spb_move(-600);

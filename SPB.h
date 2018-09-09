@@ -80,5 +80,6 @@ void beer_time();
 float filterloop(float);
 void set_lights(int);
 void publish_all(void);
+void publish_tray(void);
 
 

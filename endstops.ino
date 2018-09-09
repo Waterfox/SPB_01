@@ -21,10 +21,13 @@ void endstops::endstops_init() {
 void endstops::check_endstops() {
   if (digitalRead(Z_MAX_PIN) == true){
     es.enUp = false;  //disable updward motion
+    trayPosStp = Z_MAX_POS;
   }
   else es.enUp=true;
+  
   if (digitalRead(Z_MIN_PIN) == true){
     es.enDown = false;  //disable downward motion
+    trayPosStp = Z_MIN_POS;
   }
   else es.enDown=true;
 }

@@ -21,6 +21,8 @@ void beer_time(){
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
       update_tray_pos();
+//      publish_sensors();
+//      publish_tray();
       
       //detect the top of the glass ***
       if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
@@ -60,11 +62,12 @@ void beer_time(){
     if (wait_time_micros <= 0) {
       
       update_tray_pos();
-      publish_all(); 
+//      publish_sensors(); 
+//      publish_tray();
 
       //Stop if there is too much foam!
       if (ir_msg.data < trayPosStp - glassHeight + 10){ 
-        //--If foam is within 10cm from top of glass, break 
+        //--If foam is within 10mm from top of glass, break 
         nh.loginfo("Foam Alert!");
         break;
       }
