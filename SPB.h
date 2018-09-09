@@ -29,7 +29,6 @@
 
 //Stepper Driver
 #include "DRV8825.h"
-#include "A4988.h"
 #define MODE0 10
 #define MODE1 11
 #define MODE2 12
