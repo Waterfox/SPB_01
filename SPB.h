@@ -44,7 +44,7 @@
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
 // 1=full step, 2=half step etc.
-#define MICROSTEPS 1
+#define MICROSTEPS 16
 
 //Other pins
 #define SOLENOID 9  //flow valve
