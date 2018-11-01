@@ -40,6 +40,7 @@ short glassTop = 0;
 short glassBot = 0;
 short glassHeight = 165;
 int curLightVal = 100;
+int curRPM = 10;
 
 long pub_timer1 = 0;
 long pub_timer2 = 0;
@@ -123,7 +124,7 @@ void setup() {
 
 
 //Init the stepper
-  stepper.begin(RPM, MICROSTEPS);
+  stepper.begin(curRPM, MICROSTEPS);
   stepper.enable();
 
 // Init the endstops and buttons

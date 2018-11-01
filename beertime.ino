@@ -50,6 +50,8 @@ void beer_time(){
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
+  curRPM = 4; //lower RPM
+  stepper.setRPM(curRPM);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
   
@@ -88,6 +90,8 @@ void beer_time(){
 
 //  3. Lower the Tray -------------------------------------
   nh.loginfo("Lowering the tray");
+  curRPM = 10; //raise RPM
+  stepper.setRPM(curRPM);
   home_tray();
   digitalWrite(STARTLED, LOW);
   nh.loginfo("Process complete");
