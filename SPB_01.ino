@@ -10,7 +10,10 @@
 
 /*You must change the baud rate to 500000 in line 81 or ArduinoHardware.h
  * rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
+ * NOTE: direction changed for tmc 2208
  */
+
+
 
 
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
@@ -40,7 +43,7 @@ short glassTop = 0;
 short glassBot = 0;
 short glassHeight = 165;
 int curLightVal = 100;
-int curRPM = 10;
+int curRPM = RPM;
 
 long pub_timer1 = 0;
 long pub_timer2 = 0;
@@ -196,17 +199,17 @@ int spb_move(int steps){
   if (abs(steps) > DEADBAND){
     if (steps > MAX_STEPS && es.enUp == true){
         stepper.enable();
-        stepper.startMove(+MAX_STEPS);
+        stepper.startMove(-MAX_STEPS);
         return 1;
     }
     else if(steps < -MAX_STEPS && es.enDown == true){
         stepper.enable();
-        stepper.startMove(-MAX_STEPS);
+        stepper.startMove(+MAX_STEPS);
         return -1;
     }
     else if ((steps>0 && es.enUp ==true) || (steps<0 && es.enDown == true)){
       stepper.enable();
-      stepper.startMove(steps);
+      stepper.startMove(-steps);
       return ((steps > 0) - (steps < 0)); 
     }
     else return 0;  
@@ -215,7 +218,7 @@ int spb_move(int steps){
 }
 
 void update_tray_pos(void){
-    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 50.0); // distance travelled in mm
+    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 100.0); // distance travelled in mm
     stepper.step_count = 0;
     publish_tray();
 }
@@ -244,7 +247,7 @@ void home_tray(){
     update_tray_pos();
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
-        spb_move(-600);
+        spb_move(-MAX_STEPS);
     }
     else {
       delay(1);

@@ -34,11 +34,12 @@
 #define MODE2 12
 
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
-#define MOTOR_STEPS 200 // steps per rotation
-//#define RPM 240 // 240 max
-#define MAX_STEPS 80 //max steps in one loop
+#define MOTOR_STEPS 400 // steps per rotation
+#define RPM 12 // 240 max
+#define RPM_POUR 4
+#define MAX_STEPS 400 //max steps in one loop
 #define DEADBAND 15 // deadband steps
-#define STEPSPERMM 50 //steps per mm of travel
+#define STEPSPERMM 100.0 //steps per mm of travel
 #define PITCH 4 //mm per rotation
 
 // Since microstepping is set externally, make sure this matches the selected mode
@@ -61,9 +62,9 @@
 #define SIDEIRTHRESH 1.23 // ADC fraction increase when glass detected
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
-#define STOPDISTANCE 190.0 // How far to stop the bottom of the glass  (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
+#define STOPDISTANCE 190 // How far to stop the bottom of the glass  (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
 #define SETPOINT 15  // the tube will be X mm from surface
-#define SURFOFFSET 40 // fill the glass this far from the glass top
+#define SURFOFFSET 50 // fill the glass this far from the glass top
 #define TPUB1 300 //
 #define TPUB2 500 //
 
