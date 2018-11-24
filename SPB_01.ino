@@ -8,12 +8,10 @@
 #include <std_msgs/UInt16.h>
 #include <std_msgs/Bool.h>
 
-/*You must change the baud rate to 500000 in line 81 or ArduinoHardware.h
+/*
  * rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
  * NOTE: direction changed for tmc 2208
  */
-
-
 
 
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
@@ -146,6 +144,7 @@ void setup() {
   home_tray();
 
 //Init ROS
+  nh.getHardware()->setBaud(BAUDRATE);
   nh.initNode();
   nh.subscribe(sub_cv);
   nh.subscribe(sub_cmd);
