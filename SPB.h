@@ -64,9 +64,9 @@
 #define SIDEIRTHRESH 1.23 // ADC fraction increase when glass detected
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
-#define STOPDISTANCE 190 // How far to stop the bottom of the glass  (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
+#define STOPDISTANCE 190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
 #define SETPOINT 15  // the tube will be X mm from surface
-#define SURFOFFSET 50 // fill the glass this far from the glass top
+#define SURFOFFSET 60 // fill the glass this far from the glass top
 #define TPUB1 300 //
 #define TPUB2 500 //
 

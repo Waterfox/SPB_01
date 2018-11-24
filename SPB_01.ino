@@ -14,6 +14,8 @@
  */
 
 
+
+
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
 
 
@@ -139,9 +141,7 @@ void setup() {
   pixels.begin();
   set_lights(curLightVal);
 
-  // Home the Tray
-//  nh.loginfo("Home the tray");
-  home_tray();
+
 
 //Init ROS
   nh.getHardware()->setBaud(BAUDRATE);
@@ -155,6 +155,9 @@ void setup() {
   nh.advertise(pubGH);
   nh.advertise(pubTP);
 
+ // Home the Tray
+  nh.loginfo("Home the tray");
+  home_tray();
 
 }
 

@@ -13,7 +13,8 @@ void beer_time(){
   sideIR=measure_sideIR();
 
   //Use the ultrasound to stop raising the tray -- should also use the tray position
-  while (measure_US() > STOPDISTANCE){
+//  while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND
+  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
 
     nh.spinOnce();
     
@@ -45,7 +46,7 @@ void beer_time(){
 
   if (side_detected) {glassHeight = glassTop-glassBot;}
   else {glassHeight = 165;}
-  
+  glassHeight = 160;
 
 
   //2. Begin filling! --------------------------------
@@ -55,6 +56,7 @@ void beer_time(){
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
   
+//  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
     
     unsigned wait_time_micros = stepper.nextAction();
