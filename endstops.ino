@@ -72,9 +72,11 @@ void check_estop(){
     stepper.disable();
     digitalWrite(SOLENOID,LOW);
   }
-  else state = 1; //waiting
-  digitalWrite(STARTLED, LOW);
-  home_tray();
+  else {
+    state = 1; //waiting
+    digitalWrite(STARTLED, LOW);
+    home_tray();
+  }
 }
 
 void check_start(){
@@ -85,20 +87,19 @@ void check_start(){
 }
 
 void estop_callback(){
-//  if (digitalRead(ESTOP)== true){
-////    Serial.println("ESTOP Pressed");
-//    //turn off stepper and solenoid
-//    stepper.stop();
-//    stepper.disable();
-//    digitalWrite(SOLENOID,LOW);
-//    state = 0; //e-stopped
-//  }
-//  else {
-////    Serial.println("ESTOP Released");
-//    state = 1; //waiting
-//    digitalWrite(STARTLED, LOW);
-//  }
-  check_estop();
+  nh.loginfo("Estop Callback");
+  if (digitalRead(ESTOP)== true){
+    //turn off stepper and solenoid
+    stepper.stop();
+    stepper.disable();
+    digitalWrite(SOLENOID,LOW);
+    state = 0; //e-stopped
+  }
+  else {
+//    Serial.println("ESTOP Released");
+    state = 1; //waiting
+    digitalWrite(STARTLED, LOW);
+  }
 }
 
 

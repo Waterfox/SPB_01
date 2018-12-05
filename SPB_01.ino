@@ -129,6 +129,7 @@ void publish_tray(void) {
 }
 //**********************************************
 void setup() {
+  state = 1;
   pinMode(SOLENOID,OUTPUT);
   pinMode(US_PWR,OUTPUT);
 
@@ -163,10 +164,11 @@ void setup() {
   nh.advertise(pubGH);
   nh.advertise(pubTP);
 
-
+  check_estop();
  // Home the Tray
   nh.loginfo("Home the tray");
   home_tray();
+
 
 
 }
@@ -191,7 +193,7 @@ void loop() {
     //flash LED
     long t1 = millis();
     if (t1 - LED_timer > 1000){
-      if (LED_state == false) {
+      if (!LED_state) {
         digitalWrite(STARTLED, HIGH);
         LED_state = true;
       }
@@ -272,9 +274,10 @@ float measure_US() {
 
 
 void home_tray(){
-
+  curRPM = 10; //raise RPM
+  stepper.setRPM(curRPM);
   while (es.enDown){
-    if (!state) return;
+    if (!state) break;
     update_tray_pos();
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
@@ -286,7 +289,6 @@ void home_tray(){
     nh.spinOnce();
   }
   stepper.disable();
-//  Serial.println("Tray Initialized"); 
 }
 
 

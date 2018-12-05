@@ -80,24 +80,25 @@ void beer_time(){
       
 //    Use the CV reading
       surfPos = surfPosCV;
-      
+
+      //CONTROL LOOP
       int steps = ((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
-      // adjust the tray - only downwards
+      
               
       //increase speed if level is high
-      long t1 = millis();
-      
-      if ((steps/STEPSPERMM > 5) && (t1 - RPM_timer > 1000)) {
-        curRPM = curRPM +1;
-        RPM_timer = t1;
-      }
+//      long t2 = millis();   
+//      if ((steps > 400) && (t2 - RPM_timer > 500) && (curRPM <=12))  {
+//        curRPM = curRPM +1;
+//        nh.loginfo(curRPM);
+//        RPM_timer = t2;
+//      }
       //decrease speed if level is low
-
-      if ((steps/STEPSPERMM < 5) && (t1 - RPM_timer > 1000)) {
-        curRPM = curRPM -1;
-        RPM_timer = t1;
-      }
-      
+//      if ((steps < 400) && (t2 - RPM_timer > 500) && (curRPM >=2)) {
+//        curRPM = curRPM -1;
+//        nh.loginfo(curRPM);
+//        RPM_timer = t2;
+//      }
+      // adjust the tray - only downwards
       if (steps < 0) {
         lastDirn = spb_move(steps);
       }
@@ -109,8 +110,6 @@ void beer_time(){
 
 //  3. Lower the Tray -------------------------------------
   nh.loginfo("Lowering the tray");
-  curRPM = 10; //raise RPM
-  stepper.setRPM(curRPM);
   home_tray();
   digitalWrite(STARTLED, LOW);
   nh.loginfo("Process complete");
