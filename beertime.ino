@@ -15,6 +15,7 @@ void beer_time(){
   //Use the ultrasound to stop raising the tray -- should also use the tray position
 //  while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND
   while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
+    if (!state) return;  //E-STOP
 
     nh.spinOnce();
     
@@ -58,6 +59,7 @@ void beer_time(){
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
+    if (!state) return;  //E-STOP
     
     unsigned wait_time_micros = stepper.nextAction();
     nh.spinOnce();
@@ -70,7 +72,7 @@ void beer_time(){
 //      publish_tray();
 
       //Stop if there is too much foam!
-      if (ir_msg.data < trayPosStp - glassHeight + 10){ 
+      if (measure_topIR() < trayPosStp - glassHeight + 10){ 
         //--If foam is within 10mm from top of glass, break 
         nh.loginfo("Foam Alert!");
         break;
@@ -81,6 +83,21 @@ void beer_time(){
       
       int steps = ((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
       // adjust the tray - only downwards
+              
+      //increase speed if level is high
+      long t1 = millis();
+      
+      if ((steps/STEPSPERMM > 5) && (t1 - RPM_timer > 1000)) {
+        curRPM = curRPM +1;
+        RPM_timer = t1;
+      }
+      //decrease speed if level is low
+
+      if ((steps/STEPSPERMM < 5) && (t1 - RPM_timer > 1000)) {
+        curRPM = curRPM -1;
+        RPM_timer = t1;
+      }
+      
       if (steps < 0) {
         lastDirn = spb_move(steps);
       }
@@ -97,6 +114,7 @@ void beer_time(){
   home_tray();
   digitalWrite(STARTLED, LOW);
   nh.loginfo("Process complete");
+  state=1;
   
 }
 

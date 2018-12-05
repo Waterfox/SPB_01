@@ -10,6 +10,11 @@
 /*
  * rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
  * NOTE: direction changed for tmc 2208
+ * 
+ * STATE:
+ * 0: E-Stopped
+ * 1: Ready
+ * 2: Pouring
  */
 
 
@@ -46,6 +51,9 @@ int curRPM = RPM;
 
 long pub_timer1 = 0;
 long pub_timer2 = 0;
+long LED_timer = 0;
+bool LED_state = 0;
+long RPM_timer = 0;
 
 ros::NodeHandle  nh;
 
@@ -124,6 +132,8 @@ void setup() {
   pinMode(SOLENOID,OUTPUT);
   pinMode(US_PWR,OUTPUT);
 
+//Turn off the Valve
+  digitalWrite(SOLENOID,LOW);
 
 //Init the stepper
   stepper.begin(curRPM, MICROSTEPS);
@@ -141,7 +151,6 @@ void setup() {
   set_lights(curLightVal);
 
 
-
 //Init ROS
   nh.getHardware()->setBaud(BAUDRATE);
   nh.initNode();
@@ -154,9 +163,11 @@ void setup() {
   nh.advertise(pubGH);
   nh.advertise(pubTP);
 
+
  // Home the Tray
   nh.loginfo("Home the tray");
   home_tray();
+
 
 }
 
@@ -164,7 +175,7 @@ void setup() {
 void loop() {
 
   check_estop();
-  check_start();
+  if (state) {check_start();}
   publish_sensors();
   nh.spinOnce();
   
@@ -174,6 +185,24 @@ void loop() {
     update_tray_pos();
       
   }
+
+  //ESTOP CONDITION
+  if (!state){
+    //flash LED
+    long t1 = millis();
+    if (t1 - LED_timer > 1000){
+      if (LED_state == false) {
+        digitalWrite(STARTLED, HIGH);
+        LED_state = true;
+      }
+      else {
+        digitalWrite(STARTLED, LOW);
+        LED_state = false;
+      }
+      LED_timer = t1;
+    }
+  }
+  
   else delay(1);
 
 }
@@ -245,6 +274,7 @@ float measure_US() {
 void home_tray(){
 
   while (es.enDown){
+    if (!state) return;
     update_tray_pos();
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
@@ -266,6 +296,3 @@ void set_lights(int lightVal) {
   }
   pixels.show(); 
 }
-
-
-
