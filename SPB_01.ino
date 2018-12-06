@@ -250,7 +250,7 @@ int spb_move(int steps){
 }
 
 void update_tray_pos(void){
-    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 100.0); // distance travelled in mm
+    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / STEPSPERMM); // distance travelled in mm
     stepper.step_count = 0;
     publish_tray();
 }
@@ -277,16 +277,18 @@ void home_tray(){
   curRPM = 10; //raise RPM
   stepper.setRPM(curRPM);
   while (es.enDown){
-    if (!state) break;
-    update_tray_pos();
+
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
+        if (!state) {break;}
+        update_tray_pos();
         spb_move(-MAX_STEPS);
+        nh.spinOnce();
     }
     else {
       delay(1);
     }
-    nh.spinOnce();
+    
   }
   stepper.disable();
 }
