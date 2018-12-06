@@ -90,15 +90,17 @@ void estop_callback(){
   nh.loginfo("Estop Callback");
   if (digitalRead(ESTOP)== true){
     //turn off stepper and solenoid
+    state = 0; //e-stopped
     stepper.stop();
     stepper.disable();
     digitalWrite(SOLENOID,LOW);
-    state = 0; //e-stopped
+    
   }
   else {
 //    Serial.println("ESTOP Released");
     state = 1; //waiting
     digitalWrite(STARTLED, LOW);
+    home_tray();
   }
 }
 

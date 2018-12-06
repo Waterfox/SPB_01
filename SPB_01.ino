@@ -39,8 +39,8 @@ int surfPosCV = 0;  //surface position from computer vision output
 int surfPos = 0;  //surface position used in control calculation
 
 int lastDirn = 0;
-int MODE = 0; // 0: tray level, 1: manual override -- NOT USED
-int state = 0; //0: Estopped, 1:Waiting, 2:Pouring -- NOT USED
+int steps=0;
+int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 
 bool side_detected = false;
 short glassTop = 0; 
@@ -108,7 +108,7 @@ ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 
 void publish_sensors(void) {
   long t1 = millis();
-  if (t1 > pub_timer1 + TPUB1){
+  if (t1 - pub_timer1 > TPUB1){
     us_msg.data = int(measure_US());
     ir_msg.data = int(measure_topIR());
     gh_msg.data = int(glassHeight);
@@ -121,7 +121,7 @@ void publish_sensors(void) {
 
 void publish_tray(void) {
   long t2 = millis();
-  if (t2 > pub_timer2 + TPUB2){
+  if (t2 - pub_timer2  > TPUB2){
     tp_msg.data = int(trayPosStp);
     pubTP.publish(&tp_msg);
     pub_timer2 = t2;
@@ -177,8 +177,10 @@ void setup() {
 void loop() {
 
   check_estop();
-  if (state) {check_start();}
-  publish_sensors();
+  if (state > 0) {
+    check_start();
+    publish_sensors();
+  }
   nh.spinOnce();
   
   unsigned wait_time_micros = stepper.nextAction();
@@ -277,18 +279,17 @@ void home_tray(){
   curRPM = 10; //raise RPM
   stepper.setRPM(curRPM);
   while (es.enDown){
-
+    update_tray_pos();
+    if (!state) {break;}  
     unsigned wait_time_micros_1 = stepper.nextAction();
     if (wait_time_micros_1 <= 0) {
-        if (!state) {break;}
-        update_tray_pos();
-        spb_move(-MAX_STEPS);
-        nh.spinOnce();
+         
+        spb_move(-MAX_STEPS); 
     }
     else {
       delay(1);
     }
-    
+    nh.spinOnce();
   }
   stepper.disable();
 }

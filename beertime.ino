@@ -52,20 +52,19 @@ void beer_time(){
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
-//  curRPM = 10; //lower RPM
-//  stepper.setRPM(curRPM);
+  curRPM = 4; //lower RPM
+  stepper.setRPM(curRPM);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
-    
-    
     unsigned wait_time_micros = stepper.nextAction();
     
-    
     //stepper stopped
+    
     if (wait_time_micros <= 0) {
+      
       if (!state) {break;}  //E-STOP
       nh.spinOnce();
       update_tray_pos();
@@ -73,35 +72,41 @@ void beer_time(){
 //      publish_tray();
 
       //Stop if there is too much foam!
+/*
 //      if (measure_topIR() < trayPosStp - glassHeight + 10){ 
 //        //--If foam is within 10mm from top of glass, break 
 //        nh.loginfo("Foam Alert!");
 //        break;
 //      }
+*/
       
 //    Use the CV reading
       surfPos = surfPosCV;
 
 //    CONTROL LOOP
-      int steps = ((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
+
+      steps = ((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
       // adjust the tray - only downwards  -NOT WORKING
       if (steps < 0) {
         lastDirn = spb_move(steps);
       }
-              
-//    increase speed if level is high
-//      long t2 = millis();   
-//      if ((steps > 1000) && (t2 - RPM_timer > 500) && (curRPM <=12))  {
-//        curRPM = curRPM +1;
-//        nh.loginfo(curRPM);
-//        RPM_timer = t2;
-//      }
-//    decrease speed if level is low
-//      if ((steps < 1000) && (t2 - RPM_timer > 500) && (curRPM >=2)) {
-//        curRPM = curRPM -1;
-//        nh.loginfo(curRPM);
-//        RPM_timer = t2;
-//      }
+
+//lastDirn = spb_move(-300);
+/*
+    increase speed if level is high
+      long t2 = millis();   
+      if ((steps > 1000) && (t2 - RPM_timer > 500) && (curRPM <=12))  {
+        curRPM = curRPM +1;
+        nh.loginfo(curRPM);
+        RPM_timer = t2;
+      }
+    decrease speed if level is low
+      if ((steps < 1000) && (t2 - RPM_timer > 500) && (curRPM >=2)) {
+        curRPM = curRPM -1;
+        nh.loginfo(curRPM);
+        RPM_timer = t2;
+      }
+*/
 
       
     }
