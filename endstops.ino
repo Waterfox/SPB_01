@@ -100,7 +100,7 @@ void estop_callback(){
 //    Serial.println("ESTOP Released");
     state = 1; //waiting
     digitalWrite(STARTLED, LOW);
-    home_tray();
+//    home_tray();
   }
 }
 
