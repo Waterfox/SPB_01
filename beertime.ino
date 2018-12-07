@@ -34,7 +34,7 @@ void beer_time(){
         glassTop = trayPosStp - SIDEIRPOS;
       }
       
-      lastDirn = spb_move(200);
+      lastDirn = spb_move(400);
     }
     else delay(1);
 
