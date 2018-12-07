@@ -279,7 +279,7 @@ float measure_US() {
 
 void home_tray()
 {
-  curRPM = 10; //raise RPM
+  curRPM = 9; //raise RPM
   stepper.setRPM(curRPM);
   
   while (es.enDown){

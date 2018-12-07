@@ -57,7 +57,7 @@ void beer_time(){
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
-  curRPM = 4; //lower RPM
+  curRPM = 5; //lower RPM
   stepper.setRPM(curRPM);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
@@ -65,12 +65,13 @@ void beer_time(){
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
     wait_time_micros = stepper.nextAction();
-    nh.spinOnce();
+    
       
     
     if (wait_time_micros <= 0) {
       update_tray_pos();
-      publish_sensors(); 
+      publish_sensors();
+      nh.spinOnce();
       if (!state) {return;}  //E-STOP
 
 
