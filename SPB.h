@@ -67,7 +67,7 @@
 #define STOPDISTANCE 190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
 #define SETPOINT 15  // the tube will be X mm from surface
 #define SURFOFFSET 60 // fill the glass this far from the glass top
-#define TPUB1 300 //
+#define TPUB1 250 //
 #define TPUB2 500 //
 
 float topIR2dist(int);

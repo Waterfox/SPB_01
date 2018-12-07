@@ -20,8 +20,8 @@ void beer_time(){
     nh.spinOnce();
     
 //    Serial.println(trayPosStp);
-    unsigned wait_time_micros_1 = stepper.nextAction();
-    if (wait_time_micros_1 <= 0) {
+    wait_time_micros = stepper.nextAction();
+    if (wait_time_micros <= 0) {
       update_tray_pos();
       publish_sensors();
 //      publish_tray();
@@ -34,7 +34,7 @@ void beer_time(){
         glassTop = trayPosStp - SIDEIRPOS;
       }
       
-      lastDirn = spb_move(200);
+      lastDirn = spb_move(MAX_STEPS);
     }
     else delay(1);
 
@@ -45,9 +45,14 @@ void beer_time(){
   //the bottom of the glass location based on
   glassBot = trayPosStp - STOPDISTANCE;
 
-  if (side_detected) {glassHeight = glassTop-glassBot;}
+  if (side_detected) {
+    glassHeight = glassTop-glassBot;
+    if (glassHeight > 180) {
+      glassHeight = 180;
+    }
+  }
   else {glassHeight = 165;}
-//  glassHeight = 160;
+
 
 
   //2. Begin filling! --------------------------------
@@ -59,60 +64,33 @@ void beer_time(){
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
-    unsigned wait_time_micros = stepper.nextAction();
-    
-    //stepper stopped
+    wait_time_micros = stepper.nextAction();
+    nh.spinOnce();
+      
     
     if (wait_time_micros <= 0) {
-      
-      if (!state) {break;}  //E-STOP
-      nh.spinOnce();
       update_tray_pos();
       publish_sensors(); 
-//      publish_tray();
+      if (!state) {return;}  //E-STOP
 
-      //Stop if there is too much foam!
-/*
-//      if (measure_topIR() < trayPosStp - glassHeight + 10){ 
-//        //--If foam is within 10mm from top of glass, break 
-//        nh.loginfo("Foam Alert!");
-//        break;
-//      }
-*/
+
       
 //    Use the CV reading
       surfPos = surfPosCV;
 
 //    CONTROL LOOP
 
-      steps = ((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
+      steps = (int)((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
       // adjust the tray - only downwards  -NOT WORKING
-      if (steps < 0) {
+      if ((steps < 0) && (steps < -DEADBAND)) {
         lastDirn = spb_move(steps);
       }
 
-//lastDirn = spb_move(-300);
-/*
-    increase speed if level is high
-      long t2 = millis();   
-      if ((steps > 1000) && (t2 - RPM_timer > 500) && (curRPM <=12))  {
-        curRPM = curRPM +1;
-        nh.loginfo(curRPM);
-        RPM_timer = t2;
-      }
-    decrease speed if level is low
-      if ((steps < 1000) && (t2 - RPM_timer > 500) && (curRPM >=2)) {
-        curRPM = curRPM -1;
-        nh.loginfo(curRPM);
-        RPM_timer = t2;
-      }
-*/
-
-      
     }
   
     else delay(1);
   }
+  
   digitalWrite(SOLENOID,false);  //Close the solenoid valve
 
 //  3. Lower the Tray -------------------------------------

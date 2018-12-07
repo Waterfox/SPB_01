@@ -48,6 +48,7 @@ short glassBot = 0;
 short glassHeight = 165;
 int curLightVal = 100;
 int curRPM = RPM;
+unsigned wait_time_micros;
 
 long pub_timer1 = 0;
 long pub_timer2 = 0;
@@ -71,7 +72,7 @@ void cmd_cb(const std_msgs::UInt16& cmd_msg){
       unsigned wait_time_micros = stepper.nextAction();
       if (wait_time_micros <= 0) {
         update_tray_pos();
-        int steps = ((cmdPosStp - trayPosStp)*-STEPSPERMM);
+        steps = ((cmdPosStp - trayPosStp)*-STEPSPERMM);
         lastDirn = spb_move(steps);
       }
       else {delay(1);}
@@ -109,9 +110,10 @@ ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 void publish_sensors(void) {
   long t1 = millis();
   if (t1 - pub_timer1 > TPUB1){
-    us_msg.data = int(measure_US());
-    ir_msg.data = int(measure_topIR());
-    gh_msg.data = int(glassHeight);
+    us_msg.data = (int)measure_US();
+    ir_msg.data = (int)measure_topIR();
+//    gh_msg.data = (int)glassHeight;
+    gh_msg.data = (int)stepper.step_count;
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
     pubGH.publish(&gh_msg);
@@ -122,7 +124,7 @@ void publish_sensors(void) {
 void publish_tray(void) {
   long t2 = millis();
   if (t2 - pub_timer2  > TPUB2){
-    tp_msg.data = int(trayPosStp);
+    tp_msg.data = (int)trayPosStp;
     pubTP.publish(&tp_msg);
     pub_timer2 = t2;
   }
@@ -182,13 +184,13 @@ void loop() {
     publish_sensors();
   }
   nh.spinOnce();
+  update_tray_pos(); 
   
-  unsigned wait_time_micros = stepper.nextAction();
-  if (wait_time_micros <= 0) {
-    stepper.disable();
-    update_tray_pos();
-      
-  }
+//  wait_time_micros = stepper.nextAction();
+//  if (wait_time_micros <= 0) {
+//    stepper.disable();
+    
+//  }
 
   //ESTOP CONDITION
   if (!state){
@@ -207,7 +209,7 @@ void loop() {
     }
   }
   
-  else delay(1);
+  else delay(50);
 
 }
 //------------------------------------------------
@@ -229,22 +231,22 @@ float US2dist(int usVal){
 
 //Check endstop conditions and move the stepper motor
 //return direction of steps moved
-int spb_move(int steps){ 
-  if (abs(steps) > DEADBAND){
-    if (steps > MAX_STEPS && es.enUp == true){
+int spb_move(int move_steps){ 
+  if (abs(move_steps) > DEADBAND){
+    if (move_steps > MAX_STEPS && es.enUp == true){
         stepper.enable();
         stepper.startMove(-MAX_STEPS);
         return 1;
     }
-    else if(steps < -MAX_STEPS && es.enDown == true){
+    else if(move_steps < -MAX_STEPS && es.enDown == true){
         stepper.enable();
         stepper.startMove(+MAX_STEPS);
         return -1;
     }
-    else if ((steps>0 && es.enUp ==true) || (steps<0 && es.enDown == true)){
+    else if ((move_steps>0 && es.enUp == true) || (move_steps<0 && es.enDown == true)){
       stepper.enable();
-      stepper.startMove(-steps);
-      return ((steps > 0) - (steps < 0)); 
+      stepper.startMove(-move_steps);
+      return ((move_steps > 0) - (move_steps < 0)); 
     }
     else return 0;  
   }
@@ -252,7 +254,7 @@ int spb_move(int steps){
 }
 
 void update_tray_pos(void){
-    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / STEPSPERMM); // distance travelled in mm
+    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 100.0); // distance travelled in mm
     stepper.step_count = 0;
     publish_tray();
 }
@@ -275,21 +277,24 @@ float measure_US() {
 }
 
 
-void home_tray(){
+void home_tray()
+{
   curRPM = 10; //raise RPM
   stepper.setRPM(curRPM);
+  
   while (es.enDown){
-    update_tray_pos();
+    
     if (!state) {break;}  
-    unsigned wait_time_micros_1 = stepper.nextAction();
-    if (wait_time_micros_1 <= 0) {
-         
-        spb_move(-MAX_STEPS); 
+    wait_time_micros = stepper.nextAction();
+    if (wait_time_micros <= 0) {
+      update_tray_pos();
+      nh.spinOnce();
+      lastDirn = spb_move(-MAX_STEPS); 
     }
     else {
       delay(1);
     }
-    nh.spinOnce();
+    
   }
   stepper.disable();
 }
