@@ -6,6 +6,7 @@
 #include <ros.h>
 #include <std_msgs/UInt16.h>
 #include <std_msgs/Bool.h>
+#include <stdlib.h>
 
 /*
  * rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
@@ -113,7 +114,8 @@ void publish_sensors(void) {
     us_msg.data = (int)measure_US();
     ir_msg.data = (int)measure_topIR();
 //    gh_msg.data = (int)glassHeight;
-    gh_msg.data = (int)stepper.step_count;
+//    gh_msg.data = (int)stepper.step_count;  //DEBUG
+    gh_msg.data = abs(steps); 
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
     pubGH.publish(&gh_msg);
@@ -248,13 +250,15 @@ int spb_move(int move_steps){
       stepper.startMove(-move_steps);
       return ((move_steps > 0) - (move_steps < 0)); 
     }
-    else return 0;  
+    else {
+      return 0;  
+    }
   }
   return 0;
 }
 
 void update_tray_pos(void){
-    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 100.0); // distance travelled in mm
+    trayPosStp = trayPosStp - ((stepper.step_count*lastDirn) / 100.0); // distance travelled in mm
     stepper.step_count = 0;
     publish_tray();
 }
@@ -279,7 +283,7 @@ float measure_US() {
 
 void home_tray()
 {
-  curRPM = 9; //raise RPM
+  curRPM = 12; //raise RPM
   stepper.setRPM(curRPM);
   
   while (es.enDown){

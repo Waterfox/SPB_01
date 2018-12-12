@@ -1,7 +1,8 @@
 
 
 void beer_time(){
-
+  curRPM = 12; //lower RPM
+  stepper.setRPM(curRPM);
   // 0. The tray is already lowered
 
   // Turn on red button LED
@@ -16,13 +17,13 @@ void beer_time(){
 //  while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND
   while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
     if (!state) {return;}  //E-STOP
-
+    update_tray_pos();
     nh.spinOnce();
     
 //    Serial.println(trayPosStp);
     wait_time_micros = stepper.nextAction();
     if (wait_time_micros <= 0) {
-      update_tray_pos();
+      stepper.step_count = 0;
       publish_sensors();
 //      publish_tray();
       
@@ -57,38 +58,43 @@ void beer_time(){
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
-  curRPM = 5; //lower RPM
+  curRPM = 4; //lower RPM
   stepper.setRPM(curRPM);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
-  
+//  lastDirn = spb_move(-600);
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
-  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
+//  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
+  while (true){
     wait_time_micros = stepper.nextAction();
-    
       
     
     if (wait_time_micros <= 0) {
       update_tray_pos();
-      publish_sensors();
+      //publish_sensors();
       nh.spinOnce();
-      if (!state) {return;}  //E-STOP
+     // if (!state) {return;}  //E-STOP
+      lastDirn = spb_move(-400);
 
-
-      
+/*      
 //    Use the CV reading
       surfPos = surfPosCV;
 
 //    CONTROL LOOP
-
-      steps = (int)((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
+      steps = 0;
+      steps = int((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
       // adjust the tray - only downwards  -NOT WORKING
+      
       if ((steps < 0) && (steps < -DEADBAND)) {
-        lastDirn = spb_move(steps);
+        nh.loginfo("ctrl");
+        char output[8];
+        itoa(steps,output,10);
+        nh.loginfo(output);
+//        lastDirn = spb_move(-100);
       }
-
+      */
     }
-  
+    
     else delay(1);
   }
   
