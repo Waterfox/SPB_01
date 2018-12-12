@@ -52,29 +52,34 @@ void beer_time(){
       glassHeight = 180;
     }
   }
-  else {glassHeight = 165;}
-
+  else {glassHeight = GLASSHEIGHT_DEFAULT;}
+  glassHeight = GLASSHEIGHT_DEFAULT;
 
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
-  curRPM = 6; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
+  curRPM = 5; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
   stepper.setRPM(curRPM);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
-//  lastDirn = spb_move(-600);
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
-//  while (true){
     wait_time_micros = stepper.nextAction();
       
-    
     if (wait_time_micros <= 0) {
       update_tray_pos();
       publish_sensors();
       nh.spinOnce();
       if (!state) {return;}  //E-STOP
-//      lastDirn = spb_move(-400);
+
+
+      //Stop if there is too much foam!
+      if (ir_msg.data < trayPosStp - glassHeight + 10){ 
+        //--If foam is within 10mm from top of glass, break 
+        nh.loginfo("Foam Alert!");
+        break;
+      }
+
 
       
 //    Use the CV reading
@@ -83,18 +88,17 @@ void beer_time(){
 //    CONTROL LOOP
       steps = 0;
       steps = int((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
-      // adjust the tray - only downwards  -NOT WORKING
-      
+      // adjust the tray - only downwards
       if ((steps < 0) && (steps < -DEADBAND)) {
-        nh.loginfo("ctrl");
-        char output[8];
-        itoa(steps,output,10);
-        nh.loginfo(output);
+        /*
+         *nh.loginfo("ctrl");
+         *char output[8];
+         *itoa(steps,output,10);
+         *nh.loginfo(output);
+         */
         lastDirn = spb_move(steps);
-      }
-      
+      } 
     }
-    
     else delay(1);
   }
   

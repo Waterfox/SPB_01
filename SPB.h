@@ -44,6 +44,8 @@
 #define STEPSPERMM 100.0 //steps per mm of travel
 #define PITCH 4 //mm per rotation
 
+#define GLASSHEIGHT_DEFAULT 165
+
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
 // 1=full step, 2=half step etc.
@@ -59,9 +61,10 @@
 #define STARTBTN 5 // start button //THESE ARE NOT INTERRUPT PINS CHANGE TO 3
 #define STARTLED 4 // start button LED
 #define LED_PIN 6 // Neopixel pin
-#define NUMPIXELS 26
+#define NUMPIXELS 26 // Number of LEDs
+#define LED_START_VAL 180 // Starting brightness
 
-#define SIDEIRTHRESH 1.23 // ADC fraction increase when glass detected
+#define SIDEIRTHRESH 1.22 // ADC fraction increase when glass detected
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
 #define STOPDISTANCE 190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)

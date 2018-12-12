@@ -46,8 +46,8 @@ int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 bool side_detected = false;
 short glassTop = 0; 
 short glassBot = 0;
-short glassHeight = 165;
-int curLightVal = 100;
+short glassHeight = GLASSHEIGHT_DEFAULT;
+int curLightVal = 200;
 int curRPM = RPM;
 unsigned wait_time_micros;
 
@@ -113,9 +113,9 @@ void publish_sensors(void) {
   if (t1 - pub_timer1 > TPUB1){
     us_msg.data = (int)measure_US();
     ir_msg.data = (int)measure_topIR();
-//    gh_msg.data = (int)glassHeight;
+    gh_msg.data = (int)glassHeight;
 //    gh_msg.data = (int)stepper.step_count;  //DEBUG
-    gh_msg.data = abs(steps); 
+//    gh_msg.data = abs(steps); //DEBUG
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
     pubGH.publish(&gh_msg);
