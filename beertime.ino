@@ -58,25 +58,25 @@ void beer_time(){
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
-  curRPM = 4; //lower RPM
+  curRPM = 6; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
   stepper.setRPM(curRPM);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
 //  lastDirn = spb_move(-600);
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
-//  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
-  while (true){
+  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
+//  while (true){
     wait_time_micros = stepper.nextAction();
       
     
     if (wait_time_micros <= 0) {
       update_tray_pos();
-      //publish_sensors();
+      publish_sensors();
       nh.spinOnce();
-     // if (!state) {return;}  //E-STOP
-      lastDirn = spb_move(-400);
+      if (!state) {return;}  //E-STOP
+//      lastDirn = spb_move(-400);
 
-/*      
+      
 //    Use the CV reading
       surfPos = surfPosCV;
 
@@ -90,9 +90,9 @@ void beer_time(){
         char output[8];
         itoa(steps,output,10);
         nh.loginfo(output);
-//        lastDirn = spb_move(-100);
+        lastDirn = spb_move(steps);
       }
-      */
+      
     }
     
     else delay(1);
