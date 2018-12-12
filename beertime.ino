@@ -1,7 +1,8 @@
 
 
 void beer_time(){
-
+  curRPM = 12; //lower RPM
+  stepper.setRPM(curRPM);
   // 0. The tray is already lowered
 
   // Turn on red button LED
@@ -15,13 +16,14 @@ void beer_time(){
   //Use the ultrasound to stop raising the tray -- should also use the tray position
 //  while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND
   while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
-
+    if (!state) {return;}  //E-STOP
+    update_tray_pos();
     nh.spinOnce();
     
 //    Serial.println(trayPosStp);
-    unsigned wait_time_micros_1 = stepper.nextAction();
-    if (wait_time_micros_1 <= 0) {
-      update_tray_pos();
+    wait_time_micros = stepper.nextAction();
+    if (wait_time_micros <= 0) {
+      stepper.step_count = 0;
       publish_sensors();
 //      publish_tray();
       
@@ -33,7 +35,7 @@ void beer_time(){
         glassTop = trayPosStp - SIDEIRPOS;
       }
       
-      lastDirn = spb_move(200);
+      lastDirn = spb_move(MAX_STEPS);
     }
     else delay(1);
 
@@ -44,30 +46,32 @@ void beer_time(){
   //the bottom of the glass location based on
   glassBot = trayPosStp - STOPDISTANCE;
 
-  if (side_detected) {glassHeight = glassTop-glassBot;}
-  else {glassHeight = 165;}
-  glassHeight = 160;
+  if (side_detected) {
+    glassHeight = glassTop-glassBot;
+    if (glassHeight > 180) {
+      glassHeight = 180;
+    }
+  }
+  else {glassHeight = GLASSHEIGHT_DEFAULT;}
+  glassHeight = GLASSHEIGHT_DEFAULT;
 
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
-  curRPM = 4; //lower RPM
+  curRPM = 5; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
   stepper.setRPM(curRPM);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
-  
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
   while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
-    
-    unsigned wait_time_micros = stepper.nextAction();
-    nh.spinOnce();
-    
-    //stepper stopped
-    if (wait_time_micros <= 0) {
+    wait_time_micros = stepper.nextAction();
       
+    if (wait_time_micros <= 0) {
       update_tray_pos();
-      publish_sensors(); 
-//      publish_tray();
+      publish_sensors();
+      nh.spinOnce();
+      if (!state) {return;}  //E-STOP
+
 
       //Stop if there is too much foam!
       if (ir_msg.data < trayPosStp - glassHeight + 10){ 
@@ -75,28 +79,37 @@ void beer_time(){
         nh.loginfo("Foam Alert!");
         break;
       }
+
+
       
 //    Use the CV reading
       surfPos = surfPosCV;
-      
-      int steps = ((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
+
+//    CONTROL LOOP
+      steps = 0;
+      steps = int((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
       // adjust the tray - only downwards
-      if (steps < 0) {
+      if ((steps < 0) && (steps < -DEADBAND)) {
+        /*
+         *nh.loginfo("ctrl");
+         *char output[8];
+         *itoa(steps,output,10);
+         *nh.loginfo(output);
+         */
         lastDirn = spb_move(steps);
-      }
+      } 
     }
-  
     else delay(1);
   }
+  
   digitalWrite(SOLENOID,false);  //Close the solenoid valve
 
 //  3. Lower the Tray -------------------------------------
   nh.loginfo("Lowering the tray");
-  curRPM = 10; //raise RPM
-  stepper.setRPM(curRPM);
   home_tray();
   digitalWrite(STARTLED, LOW);
   nh.loginfo("Process complete");
+  state=1;
   
 }
 

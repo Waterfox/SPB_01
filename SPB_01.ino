@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include "SPB.h"
 #include "endstops.h"
@@ -7,10 +6,16 @@
 #include <ros.h>
 #include <std_msgs/UInt16.h>
 #include <std_msgs/Bool.h>
+#include <stdlib.h>
 
 /*
  * rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
  * NOTE: direction changed for tmc 2208
+ * 
+ * STATE:
+ * 0: E-Stopped
+ * 1: Ready
+ * 2: Pouring
  */
 
 
@@ -35,18 +40,22 @@ int surfPosCV = 0;  //surface position from computer vision output
 int surfPos = 0;  //surface position used in control calculation
 
 int lastDirn = 0;
-int MODE = 0; // 0: tray level, 1: manual override -- NOT USED
-int state = 0; //0: Estopped, 1:Waiting, 2:Pouring -- NOT USED
+int steps=0;
+int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 
 bool side_detected = false;
 short glassTop = 0; 
 short glassBot = 0;
-short glassHeight = 165;
-int curLightVal = 100;
+short glassHeight = GLASSHEIGHT_DEFAULT;
+int curLightVal = 200;
 int curRPM = RPM;
+unsigned wait_time_micros;
 
 long pub_timer1 = 0;
 long pub_timer2 = 0;
+long LED_timer = 0;
+bool LED_state = 0;
+long RPM_timer = 0;
 
 ros::NodeHandle  nh;
 
@@ -64,7 +73,7 @@ void cmd_cb(const std_msgs::UInt16& cmd_msg){
       unsigned wait_time_micros = stepper.nextAction();
       if (wait_time_micros <= 0) {
         update_tray_pos();
-        int steps = ((cmdPosStp - trayPosStp)*-STEPSPERMM);
+        steps = ((cmdPosStp - trayPosStp)*-STEPSPERMM);
         lastDirn = spb_move(steps);
       }
       else {delay(1);}
@@ -101,10 +110,12 @@ ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 
 void publish_sensors(void) {
   long t1 = millis();
-  if (t1 > pub_timer1 + TPUB1){
-    us_msg.data = int(measure_US());
-    ir_msg.data = int(measure_topIR());
-    gh_msg.data = int(glassHeight);
+  if (t1 - pub_timer1 > TPUB1){
+    us_msg.data = (int)measure_US();
+    ir_msg.data = (int)measure_topIR();
+    gh_msg.data = (int)glassHeight;
+//    gh_msg.data = (int)stepper.step_count;  //DEBUG
+//    gh_msg.data = abs(steps); //DEBUG
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
     pubGH.publish(&gh_msg);
@@ -114,17 +125,20 @@ void publish_sensors(void) {
 
 void publish_tray(void) {
   long t2 = millis();
-  if (t2 > pub_timer2 + TPUB2){
-    tp_msg.data = int(trayPosStp);
+  if (t2 - pub_timer2  > TPUB2){
+    tp_msg.data = (int)trayPosStp;
     pubTP.publish(&tp_msg);
     pub_timer2 = t2;
   }
 }
 //**********************************************
 void setup() {
+  state = 1;
   pinMode(SOLENOID,OUTPUT);
   pinMode(US_PWR,OUTPUT);
 
+//Turn off the Valve
+  digitalWrite(SOLENOID,LOW);
 
 //Init the stepper
   stepper.begin(curRPM, MICROSTEPS);
@@ -142,7 +156,6 @@ void setup() {
   set_lights(curLightVal);
 
 
-
 //Init ROS
   nh.getHardware()->setBaud(BAUDRATE);
   nh.initNode();
@@ -155,9 +168,12 @@ void setup() {
   nh.advertise(pubGH);
   nh.advertise(pubTP);
 
+  check_estop();
  // Home the Tray
   nh.loginfo("Home the tray");
   home_tray();
+
+
 
 }
 
@@ -165,17 +181,37 @@ void setup() {
 void loop() {
 
   check_estop();
-  check_start();
-  publish_sensors();
-  nh.spinOnce();
-  
-  unsigned wait_time_micros = stepper.nextAction();
-  if (wait_time_micros <= 0) {
-    stepper.disable();
-    update_tray_pos();
-      
+  if (state > 0) {
+    check_start();
+    publish_sensors();
   }
-  else delay(1);
+  nh.spinOnce();
+  update_tray_pos(); 
+  
+//  wait_time_micros = stepper.nextAction();
+//  if (wait_time_micros <= 0) {
+//    stepper.disable();
+    
+//  }
+
+  //ESTOP CONDITION
+  if (!state){
+    //flash LED
+    long t1 = millis();
+    if (t1 - LED_timer > 1000){
+      if (!LED_state) {
+        digitalWrite(STARTLED, HIGH);
+        LED_state = true;
+      }
+      else {
+        digitalWrite(STARTLED, LOW);
+        LED_state = false;
+      }
+      LED_timer = t1;
+    }
+  }
+  
+  else delay(50);
 
 }
 //------------------------------------------------
@@ -197,30 +233,32 @@ float US2dist(int usVal){
 
 //Check endstop conditions and move the stepper motor
 //return direction of steps moved
-int spb_move(int steps){ 
-  if (abs(steps) > DEADBAND){
-    if (steps > MAX_STEPS && es.enUp == true){
+int spb_move(int move_steps){ 
+  if (abs(move_steps) > DEADBAND){
+    if (move_steps > MAX_STEPS && es.enUp == true){
         stepper.enable();
         stepper.startMove(-MAX_STEPS);
         return 1;
     }
-    else if(steps < -MAX_STEPS && es.enDown == true){
+    else if(move_steps < -MAX_STEPS && es.enDown == true){
         stepper.enable();
         stepper.startMove(+MAX_STEPS);
         return -1;
     }
-    else if ((steps>0 && es.enUp ==true) || (steps<0 && es.enDown == true)){
+    else if ((move_steps>0 && es.enUp == true) || (move_steps<0 && es.enDown == true)){
       stepper.enable();
-      stepper.startMove(-steps);
-      return ((steps > 0) - (steps < 0)); 
+      stepper.startMove(-move_steps);
+      return ((move_steps > 0) - (move_steps < 0)); 
     }
-    else return 0;  
+    else {
+      return 0;  
+    }
   }
   return 0;
 }
 
 void update_tray_pos(void){
-    trayPosStp = trayPosStp - (stepper.step_count*lastDirn / 100.0); // distance travelled in mm
+    trayPosStp = trayPosStp - ((stepper.step_count*lastDirn) / 100.0); // distance travelled in mm
     stepper.step_count = 0;
     publish_tray();
 }
@@ -243,21 +281,26 @@ float measure_US() {
 }
 
 
-void home_tray(){
-
+void home_tray()
+{
+  curRPM = 12; //raise RPM
+  stepper.setRPM(curRPM);
+  
   while (es.enDown){
-    update_tray_pos();
-    unsigned wait_time_micros_1 = stepper.nextAction();
-    if (wait_time_micros_1 <= 0) {
-        spb_move(-MAX_STEPS);
+    
+    if (!state) {break;}  
+    wait_time_micros = stepper.nextAction();
+    if (wait_time_micros <= 0) {
+      update_tray_pos();
+      nh.spinOnce();
+      lastDirn = spb_move(-MAX_STEPS); 
     }
     else {
       delay(1);
     }
-    nh.spinOnce();
+    
   }
   stepper.disable();
-//  Serial.println("Tray Initialized"); 
 }
 
 
@@ -267,6 +310,3 @@ void set_lights(int lightVal) {
   }
   pixels.show(); 
 }
-
-
-
