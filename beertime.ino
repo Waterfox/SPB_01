@@ -1,6 +1,7 @@
 
 
 void beer_time(){
+
   curRPM = 12; //lower RPM
   stepper.setRPM(curRPM);
   // 0. The tray is already lowered
@@ -14,18 +15,19 @@ void beer_time(){
   sideIR=measure_sideIR();
 
   //Use the ultrasound to stop raising the tray -- should also use the tray position
-//  while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND
-  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
-    if (!state) {return;}  //E-STOP
+  while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND
+//  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
+
+    if ((!state)) {return;}  //E-STOP
+    if (nh.connected()==false) {return;}
+
     update_tray_pos();
     nh.spinOnce();
     
-//    Serial.println(trayPosStp);
     wait_time_micros = stepper.nextAction();
     if (wait_time_micros <= 0) {
       stepper.step_count = 0;
       publish_sensors();
-//      publish_tray();
       
       //detect the top of the glass ***
       if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
@@ -70,11 +72,13 @@ void beer_time(){
       update_tray_pos();
       publish_sensors();
       nh.spinOnce();
-      if (!state) {return;}  //E-STOP
-
+      if ((!state)) {return;}  //E-STOP
+      if (nh.connected()==false) {return;}
 
       //Stop if there is too much foam!
-      if (ir_msg.data < trayPosStp - glassHeight + 10){ 
+//      if (ir_msg.data < trayPosStp - glassHeight + 10){
+      if ((measure_topIR() < trayPosStp - glassHeight + 10)||(measure_US() < trayPosStp - glassHeight + 10))
+      { 
         //--If foam is within 10mm from top of glass, break 
         nh.loginfo("Foam Alert!");
         break;
