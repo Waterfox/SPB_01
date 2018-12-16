@@ -73,7 +73,10 @@ void beer_time(){
       publish_sensors();
       nh.spinOnce();
       if ((!state)) {return;}  //E-STOP
-      if (nh.connected()==false) {return;}
+      if (nh.connected()==false) {
+        digitalWrite(SOLENOID,LOW);
+        return;
+        }
 
       //Stop if there is too much foam!
 //      if (ir_msg.data < trayPosStp - glassHeight + 10){
