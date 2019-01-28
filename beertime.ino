@@ -80,7 +80,7 @@ void beer_time(){
 
       //Stop if there is too much foam!
 //      if (ir_msg.data < trayPosStp - glassHeight + 10){
-      if ((measure_topIR() < trayPosStp - glassHeight + 10)||(measure_US() < trayPosStp - glassHeight + 10))
+      if ((measure_topIR() < trayPosStp - glassHeight + 14)||(measure_US() < trayPosStp - glassHeight + 14))
       { 
         //--If foam is within 10mm from top of glass, break 
         nh.loginfo("Foam Alert!");
