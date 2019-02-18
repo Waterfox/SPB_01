@@ -298,14 +298,52 @@ void home_tray()
       lastDirn = spb_move(-MAX_STEPS);
     }
     else {
+//      nh.loginfo(stepper.getCurrentRPM());
 //      delayMicroseconds(750);
 //      delay(1);
     }
 
   }
+//  nh.loginfo("home_tray complete");
   stepper.disable();
 }
+//EXPERIMENTAL
+/*
+void home_tray()
+{
+  curRPM = 14; //raise RPM 12 working
+  stepper.setRPM(curRPM);
+  stepper.setSpeedProfile(stepper.LINEAR_SPEED, 500, 1000);
+  stepper.startMove(20000); //positive is down
+  lastDirn = 1;
+  while (es.enDown) {
 
+    if (!state) {
+      break;
+    }
+    wait_time_micros = stepper.nextAction();
+    if (wait_time_micros <= 0) {
+      update_tray_pos();
+      nh.spinOnce();
+//      lastDirn = spb_move(-MAX_STEPS);  
+      break;
+    }
+//    if (wait_time_micros >100){
+    else {
+//        update_tray_pos();
+//        nh.spinOnce();
+//      nh.loginfo(stepper.getCurrentRPM());
+//      delayMicroseconds(750);
+//      delay(1);
+    }
+  }
+  stepper.stop();
+//  nh.loginfo("home_tray complete");
+  stepper.setSpeedProfile(stepper.CONSTANT_SPEED);
+  stepper.disable();
+  return;
+}
+*/
 
 void set_lights(int lightVal) {
   for (int i = 0; i < NUMPIXELS; i++) {

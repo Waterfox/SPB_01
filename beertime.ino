@@ -32,7 +32,6 @@ void beer_time(){
       //detect the top of the glass ***
       if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
         side_detected = true;
-
         //the of glass location based on the tray position when the glass is detected
         glassTop = trayPosStp - SIDEIRPOS;
       }
