@@ -2,7 +2,7 @@
 
 void beer_time(){
 
-  curRPM = 12; //lower RPM
+  curRPM = 12; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
   // 0. The tray is already lowered
 
@@ -39,8 +39,8 @@ void beer_time(){
       
       lastDirn = spb_move(MAX_STEPS);
     }
-    else delay(1);
-
+//    else delayMicroseconds(500);
+//    else delay(1);
   }
   
   stepper.disable();
@@ -106,7 +106,7 @@ void beer_time(){
         lastDirn = spb_move(steps);
       } 
     }
-    else delay(1);
+    else delayMicroseconds(500);
   }
   
   digitalWrite(SOLENOID,false);  //Close the solenoid valve

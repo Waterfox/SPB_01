@@ -283,7 +283,7 @@ float measure_US() {
 
 void home_tray()
 {
-  curRPM = 12; //raise RPM
+  curRPM = 12; //raise RPM 12 working
   stepper.setRPM(curRPM);
 
   while (es.enDown) {
@@ -298,7 +298,8 @@ void home_tray()
       lastDirn = spb_move(-MAX_STEPS);
     }
     else {
-      delay(1);
+//      delayMicroseconds(750);
+//      delay(1);
     }
 
   }
