@@ -1,7 +1,8 @@
 
 
 void beer_time(){
-
+  side_detected = false;
+  glassHeight = 10; //default low glass height val
   curRPM = 12; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
   // 0. The tray is already lowered
@@ -13,6 +14,7 @@ void beer_time(){
   nh.loginfo("Raising the Tray");
   //baseline side IR measurement
   sideIR=measure_sideIR();
+
 
   //Use the ultrasound to stop raising the tray -- should also use the tray position
   while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND
@@ -29,12 +31,35 @@ void beer_time(){
       stepper.step_count = 0;
       publish_sensors();
       
-      //detect the top of the glass ***
+      //DETECT GLASS HEIGHT USING IR ***
+      /*
       if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
         side_detected = true;
         //the of glass location based on the tray position when the glass is detected
         glassTop = trayPosStp - SIDEIRPOS;
       }
+      */
+
+      //DETECT GLASS HEIGHT USING CV ***
+      /* If the tray is high enough
+       * Measure glass top with CV
+       * Subtract the tray position
+       * Tray edge will be in frameat trayPosStp < 235
+       * Take the largest measurement - assume no false detections above glass rim)
+       */
+
+       if (trayPosStp > 260 && side_detected == false){
+        if (linePosCV > 150){
+           glassTop = linePosCV;
+           glassBot = trayPosStp;
+           int gh= glassBot - glassTop; //20mm fudge!
+           if (gh>glassHeight){
+            glassHeight = gh;
+           }
+           side_detected = false; //default true
+        }
+       }
+       
       
       lastDirn = spb_move(MAX_STEPS);
     }
@@ -45,17 +70,25 @@ void beer_time(){
   stepper.disable();
 
   //the bottom of the glass location based on
-  glassBot = trayPosStp - STOPDISTANCE;
+  //DETECT GLASS HEIGHT USING IR ***
+  //glassBot = trayPosStp - STOPDISTANCE;
+ 
 
-  if (side_detected) {
-    glassHeight = glassTop-glassBot;
-    if (glassHeight > 180) {
-      glassHeight = 180;
-    }
-  }
-  else {glassHeight = GLASSHEIGHT_DEFAULT;}
-  glassHeight = GLASSHEIGHT_DEFAULT;
+  //DETECT GLASS HEIGHT USING CV ***
+/* Must incorporate ultrasound measurement into glass height)
+ *  
+ */
 
+  
+//  if (side_detected) {
+////     glassHeight = glassTop-glassBot;
+////    if (glassHeight > 180) {
+////      glassHeight = 180;
+////    }
+//  }
+//  else {glassHeight = GLASSHEIGHT_DEFAULT;}
+////  glassHeight = GLASSHEIGHT_DEFAULT;
+//  glassHeight = 180;
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");

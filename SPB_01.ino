@@ -37,6 +37,7 @@ float cmdPosStp = 0;
 //float surfPosIR = 0; //surface position from IR measurement - measured from the sensor down
 //float surfPosUS = 0; //surface position from Ultrasound measurement - measured from the sensor down
 int surfPosCV = 0;  //surface position from computer vision output
+int linePosCV = 0;  //line measurement from CV output
 int surfPos = 0;  //surface position used in control calculation
 
 int lastDirn = 0;
@@ -44,9 +45,9 @@ int steps = 0;
 int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 
 bool side_detected = false;
-short glassTop = 0;
-short glassBot = 0;
-short glassHeight = GLASSHEIGHT_DEFAULT;
+int glassTop = 0;
+int glassBot = 0;
+int glassHeight = GLASSHEIGHT_DEFAULT;  //top of glass to the bottom (not stem height)
 int curLightVal = 175;
 int curRPM = RPM;
 unsigned wait_time_micros;
@@ -54,10 +55,12 @@ unsigned wait_time_micros;
 long pub_timer1 = 0;
 long pub_timer2 = 0;
 long sub_timer3 = 0;
+long sub_timer4 = 0;
 long LED_timer = 0;
 bool LED_state = 0;
 long RPM_timer = 0;
 bool CV_EN = false;
+bool CV_LINES_EN = false;
 ros::NodeHandle  nh;
 
 
@@ -71,6 +74,18 @@ void cv_cb(const std_msgs::UInt16& lvl_msg) {
     CV_EN = false;
   }
   sub_timer3 = t3;
+}
+
+void cv_lines_cb(const std_msgs::UInt16& lvl_line_msg) {
+  linePosCV = lvl_line_msg.data;
+  long t4 = millis();
+  if (t4 - sub_timer4 < 300) { //if we've received a topic in the last 300ms, unlock
+    CV_LINES_EN = true;
+  }
+  else {
+    CV_LINES_EN = false;
+  }
+  sub_timer4 = t4;
 }
 
 void cmd_cb(const std_msgs::UInt16& cmd_msg) {
@@ -110,6 +125,7 @@ void cmd_led_cb(const std_msgs::UInt16& cmd_led_msg) {
 
 
 ros::Subscriber<std_msgs::UInt16> sub_cv("spb/lvl", cv_cb);
+ros::Subscriber<std_msgs::UInt16> sub_cv_lines("spb/level_lines", cv_lines_cb);
 ros::Subscriber<std_msgs::UInt16> sub_cmd("spb/cmd_pos", cmd_cb);
 ros::Subscriber<std_msgs::Bool> sub_valve("spb/cmd_valve", cmd_valve_cb);
 ros::Subscriber<std_msgs::UInt16> sub_led("spb/cmd_led", cmd_led_cb);
@@ -175,6 +191,7 @@ void setup() {
   nh.getHardware()->setBaud(BAUDRATE);
   nh.initNode();
   nh.subscribe(sub_cv);
+  nh.subscribe(sub_cv_lines);
   nh.subscribe(sub_cmd);
   nh.subscribe(sub_valve);
   nh.subscribe(sub_led);

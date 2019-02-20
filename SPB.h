@@ -45,7 +45,7 @@
 #define PITCH 4 //mm per rotation
 
 //#define GLASSHEIGHT_DEFAULT 160
-#define GLASSHEIGHT_DEFAULT 121
+#define GLASSHEIGHT_DEFAULT 121   //CHECK if glassheight is the top of the glass to the bottom (and not total stem height)
 
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
