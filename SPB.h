@@ -44,7 +44,8 @@
 #define STEPSPERMM 100.0 //steps per mm of travel
 #define PITCH 4 //mm per rotation
 
-#define GLASSHEIGHT_DEFAULT 165
+//#define GLASSHEIGHT_DEFAULT 160
+#define GLASSHEIGHT_DEFAULT 121   //CHECK if glassheight is the top of the glass to the bottom (and not total stem height)
 
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
@@ -68,10 +69,11 @@
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
 #define STOPDISTANCE 190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
-#define SETPOINT 15  // the tube will be X mm from surface
-#define SURFOFFSET 60 // fill the glass this far from the glass top
-#define TPUB1 250 //
-#define TPUB2 500 //
+#define SETPOINT 25  // the tube will be X mm from surface
+#define SURFOFFSET 25 // fill the glass this far from the glass top
+#define GLASSCVFUDGE 15 //fudge factor when measuring the glass height with CV - accounts for lens angle
+#define TPUB1 100 //
+#define TPUB2 400 //
 
 float topIR2dist(int);
 float US2dist(int);
@@ -88,5 +90,7 @@ float filterloop(float);
 void set_lights(int);
 void publish_all(void);
 void publish_tray(void);
+void check_nh(void);
+void estop_LED(void);
 
 
