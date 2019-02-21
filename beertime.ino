@@ -52,7 +52,7 @@ void beer_time(){
         if (linePosCV > 150){
            glassTop = linePosCV;
            glassBot = trayPosStp;
-           int gh= glassBot - glassTop + 20; //20mm fudge to account for lens angle!
+           int gh= glassBot - glassTop + GLASSFUDGE; //15mm fudge to account for lens angle!
            if (gh>glassHeight){
             glassHeight = gh;
            }
