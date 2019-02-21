@@ -52,7 +52,7 @@ void beer_time(){
         if (linePosCV > 150){
            glassTop = linePosCV;
            glassBot = trayPosStp;
-           int gh= glassBot - glassTop; //20mm fudge!
+           int gh= glassBot - glassTop + 20; //20mm fudge to account for lens angle!
            if (gh>glassHeight){
             glassHeight = gh;
            }
@@ -97,7 +97,8 @@ void beer_time(){
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
-  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
+//  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
+while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
     wait_time_micros = stepper.nextAction();
       
     if (wait_time_micros <= 0) {
