@@ -7,6 +7,9 @@ void zero_glass_arr(int b[], int arrSize){
 void beer_time(){
   side_detected = false;
   zero_glass_arr(glassArr,L);
+  zero_glass_arr(glassDev,L);
+  glassAv=0;
+  glassStdDev = 0;
   glassN = 0; //number of glass detections
   glassHeight = 0; //default low glass height val
   
@@ -48,8 +51,7 @@ void beer_time(){
       */
 
       //DETECT GLASS HEIGHT USING CV ***
-      /* If the tray is high enough
-       * Measure glass top with CV
+      /* Measure glass top with CV
        * Subtract the tray position
        * Tray edge will be in frameat trayPosStp < 235
        * (not used)Take the largest measurement - assume no false detections above glass rim)
@@ -62,9 +64,7 @@ void beer_time(){
           2. side hasn't been detected (not used)
           3. the linePosCV is below the top of the camera
          */
-         
          glassTop = linePosCV; 
-         //ADD FILTERING
          glassBot = trayPosStp;
          int gh = glassBot - glassTop + GLASSCVFUDGE; //15mm fudge to account for lens angle!
          glassArr[glassN] = gh; //populate array with measurement
@@ -94,6 +94,23 @@ void beer_time(){
       glassAv = glassAv + glassArr[i];
     }
     glassAv = glassAv / glassN;
+    //Use Average only - comment below
+    
+    //reject outliers
+    for (short i=0;i<glassN;i++){
+      glassDev[i] = abs(glassArr[i] - int(glassAv)); // deviation
+      glassStdDev = glassStdDev + glassDev[i]*glassDev[i]; //add to top half of STD
+    }
+      glassStdDev = glassStdDev / (glassN-1); // standard deviation
+      glassAv = 0;
+      int AvCnt = 0;
+    for (short i=0;i<glassN;i++){
+      if (glassDev[i]/glassStdDev < 1.0){ // if measurement is within 1 std, use in average
+        glassAv = glassAv + glassArr[i];
+        AvCnt++;
+      }
+    }
+    glassAv = glassAv/AvCnt; // new average with only 1std measurementsc
     glassHeight = int(glassAv); //temp
   }
   else {glassHeight = 70;} // take the shortest case - don't overpour
