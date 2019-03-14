@@ -48,6 +48,11 @@ bool side_detected = false;
 int glassTop = 0;
 int glassBot = 0;
 int glassHeight = GLASSHEIGHT_DEFAULT;  //top of glass to the bottom (not stem height)
+int glassN = 0; //counts how many times the edge us detected
+const int L = 50;
+int glassArr[L];
+float glassAv =0;
+
 int curLightVal = 175;
 int curRPM = RPM;
 unsigned wait_time_micros;
