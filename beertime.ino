@@ -27,9 +27,9 @@ void beer_time(){
 
 
   //Use the ultrasound to stop raising the tray -- should also use the tray position
-  while (measure_US() > STOPDISTANCE){  // USE ULTRASOUND  || measure_topIR() <STOPDISTANCE)
+  while ((measure_US() > STOPDISTANCE) && (es.enUp == true)) //tray is at the top{  // USE ULTRASOUND  || measure_topIR() <STOPDISTANCE)
 //  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
-
+{
     if ((!state)) {return;}  //E-STOP
     if (nh.connected()==false) {return;}
 
@@ -72,12 +72,12 @@ void beer_time(){
       }
 
       lastDirn = spb_move(MAX_STEPS);
-      if (es.enUp == false) {break;} //tray is at the top
+      
     }
   }
   
-//  stepper.disable();
-
+  stepper.disable();
+  delay(300);
   //the bottom of the glass location based on
   //DETECT GLASS HEIGHT USING IR ***
   //glassBot = trayPosStp - STOPDISTANCE;
@@ -101,7 +101,7 @@ void beer_time(){
       glassDev[i] = abs(glassArr[i] - int(glassAv)); // deviation
       glassStdDev = glassStdDev + glassDev[i]*glassDev[i]; //add to top half of STD
     }
-      glassStdDev = glassStdDev / (glassN-1); // standard deviation
+      glassStdDev = sqrt(glassStdDev / (glassN-1)); // standard deviation
       glassAv = 0;
       int AvCnt = 0;
     for (short i=0;i<glassN;i++){
@@ -131,10 +131,10 @@ void beer_time(){
 
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
-  curRPM = 5; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
+  curRPM = 6; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
   stepper.setRPM(curRPM);
-  stepper.enable();
-  spb_move(-100);
+//  stepper.enable();
+//  spb_move(-100);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
   
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
@@ -180,7 +180,7 @@ while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
         lastDirn = spb_move(steps);
       } 
     }
-    else delayMicroseconds(500);
+//    else delayMicroseconds(500);
   }
   
   digitalWrite(SOLENOID,false);  //Close the solenoid valve
