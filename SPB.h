@@ -92,5 +92,6 @@ void publish_all(void);
 void publish_tray(void);
 void check_nh(void);
 void estop_LED(void);
+void zero_glass_arr(int,int);
 
 
