@@ -140,10 +140,14 @@ std_msgs::UInt16 us_msg;
 std_msgs::UInt16 ir_msg;
 std_msgs::UInt16 gh_msg;
 std_msgs::UInt16 tp_msg;
+std_msgs::Bool esUp_msg;
+std_msgs::Bool esDown_msg;
 ros::Publisher pubUS("spb/us", &us_msg);
 ros::Publisher pubIR("spb/ir", &ir_msg);
 ros::Publisher pubGH("spb/glass_height", &gh_msg);
 ros::Publisher pubTP("spb/tray_pos", &tp_msg);
+ros::Publisher pubEU("spb/esUp", &esUp_msg);
+ros::Publisher pubED("spb/esDown", &esDown_msg);
 
 
 void publish_sensors(void) {
@@ -157,6 +161,13 @@ void publish_sensors(void) {
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
     pubGH.publish(&gh_msg);
+    esUp_msg.data = es.enUp;
+    esDown_msg.data = es.enDown;
+    pubEU.publish(&esUp_msg);
+    pubED.publish(&esDown_msg);
+
+
+    
     pub_timer1 = t1;
   }
 }
@@ -206,7 +217,8 @@ void setup() {
   nh.advertise(pubIR);
   nh.advertise(pubGH);
   nh.advertise(pubTP);
-
+  nh.advertise(pubEU);
+  nh.advertise(pubED);
   check_estop();
 
   // Home the Tray
@@ -418,5 +430,3 @@ void estop_LED() {
     
   }
 }
-
-

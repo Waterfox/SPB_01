@@ -68,7 +68,7 @@
 #define SIDEIRTHRESH 1.22 // ADC fraction increase when glass detected
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
-#define STOPDISTANCE 190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
+#define STOPDISTANCE 200 //190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
 #define SETPOINT 25  // the tube will be X mm from surface
 #define SURFOFFSET 25 // fill the glass this far from the glass top
 #define GLASSCVFUDGE 15 //fudge factor when measuring the glass height with CV - accounts for lens angle
@@ -93,5 +93,3 @@ void publish_tray(void);
 void check_nh(void);
 void estop_LED(void);
 void zero_glass_arr(int,int);
-
-

@@ -171,12 +171,12 @@ while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
       steps = int((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
       // adjust the tray - only downwards
       if ((steps < 0) && (steps < -DEADBAND)) {
-        /*
-         *nh.loginfo("ctrl");
-         *char output[8];
-         *itoa(steps,output,10);
-         *nh.loginfo(output);
-         */
+        
+         nh.loginfo("ctrl");
+         char output[8];
+         itoa(steps,output,10);
+         nh.loginfo(output);
+         
         lastDirn = spb_move(steps);
       } 
     }
@@ -193,4 +193,3 @@ while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
   state=1;
   
 }
-
