@@ -129,6 +129,8 @@ void beer_time(){
    nh.loginfo("Count: ");
    nh.loginfo(output);
 
+
+    spb_move(400);
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
   curRPM = 6; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF

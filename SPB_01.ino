@@ -319,6 +319,7 @@ float measure_US() {
 
 void home_tray()
 {
+  volatile bool tryRPM = false;
   curRPM = 12; //raise RPM 12 working
   stepper.setRPM(curRPM);
 
@@ -333,7 +334,15 @@ void home_tray()
       nh.spinOnce();
       lastDirn = spb_move(-MAX_STEPS);
     }
-    else {
+    else if (wait_time_micros > 100){ // EXPERIMENT put a timer in here to spin the node
+      if (tryRPM==false){
+        tryRPM=true;
+        stepper.stop();
+        stepper.setRPM(curRPM);
+      }
+      update_tray_pos();
+      nh.spinOnce();
+      lastDirn = spb_move(-MAX_STEPS);
 //      nh.loginfo(stepper.getCurrentRPM());
 //      delayMicroseconds(750);
 //      delay(1);
