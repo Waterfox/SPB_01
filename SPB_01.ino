@@ -55,8 +55,8 @@ int glassDev[L]; //deviation from mean
 float glassAv =0; //average gh
 float glassStdDev = 0; //mean deviation
 
-int curLightVal = 175;
-int curRPM = RPM;
+volatile int curLightVal = 175;
+volatile int curRPM = RPM;
 unsigned wait_time_micros;
 
 long pub_timer1 = 0;
