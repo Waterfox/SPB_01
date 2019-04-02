@@ -72,8 +72,8 @@
 #define SETPOINT 25  // the tube will be X mm from surface
 #define SURFOFFSET 25 // fill the glass this far from the glass top
 #define GLASSCVFUDGE 15 //fudge factor when measuring the glass height with CV - accounts for lens angle
-#define TPUB1 100 //
-#define TPUB2 400 //
+#define TPUB1 500 // publish period in ms of most topics
+#define TPUB2 500 //publish period in ms of tray topic
 
 float topIR2dist(int);
 float US2dist(int);

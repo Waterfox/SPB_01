@@ -12,12 +12,10 @@ void beer_time(){
   glassStdDev = 0;
   glassN = 0; //number of glass detections
   glassHeight = 0; //default low glass height val
-  stepper.stop();
-  stepper.disable();
+
   curRPM = 12; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
-  stepper.enable();
-  spb_move(-400);
+
   // 0. The tray is already lowered
 
   // Turn on red button LED
@@ -27,21 +25,22 @@ void beer_time(){
   nh.loginfo("Raising the Tray");
   //baseline side IR measurement
   sideIR=measure_sideIR();
-volatile int USnow = measure_US();
+  volatile int USnow = measure_US();
 
+/*
   //Use the ultrasound to stop raising the tray -- should also use the tray position
   while ((USnow > STOPDISTANCE) && (es.enUp == true)) //tray is at the top{  // USE ULTRASOUND  || measure_topIR() <STOPDISTANCE)
 //  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
 {
 
-
+    if ((!state)) {return;}  //E-STOP
     
     wait_time_micros = stepper.nextAction();
     if (wait_time_micros <= 0) {
 //       stepper.step_count = 0;
-        if ((!state)) {return;}  //E-STOP
+        
 //        if (nh.connected()==false) {return;}
-       USnow = measure_US();
+//       USnow = measure_US();
        update_tray_pos();
        nh.spinOnce();
 //      publish_sensors();
@@ -63,6 +62,7 @@ volatile int USnow = measure_US();
        * Save the measurement into an array
        */
 
+
 //       if (trayPosStp > 260 && side_detected == false && linePosCV > 150 && glassN<L){
 //         /*log glass height measurement if conditions are met
 //          1. tray is low enough
@@ -75,17 +75,57 @@ volatile int USnow = measure_US();
 //         glassArr[glassN] = gh; //populate array with measurement
 //         glassN++;
 //      }
-
+/*
       lastDirn = spb_move(MAX_STEPS);
     }
     else if (wait_time_micros >100){
-        if ((!state)) {return;}  //E-STOP
 //        if (nh.connected()==false) {return;}
        update_tray_pos();
        nh.spinOnce();
        lastDirn = spb_move(MAX_STEPS);
     }
   }
+  */
+  long pub_timer3 = 0;
+   //Experimental Code
+  volatile bool tryRPM = false;
+  while (es.enUp) {
+
+    if (!state) {
+      break;
+    }
+    wait_time_micros = stepper.nextAction();
+    
+    if (wait_time_micros <= 0) {
+      update_tray_pos();
+      nh.spinOnce();
+//      publish_sensors(); // currently overhead is too high, no point in this
+      lastDirn = spb_move(MAX_STEPS);
+    }
+
+    
+    else if (wait_time_micros > 200){ // EXPERIMENT put a timer in here to spin the node
+      long t3 = millis();
+      if (t3 - pub_timer3 > 500){ //only 
+  //      if (tryRPM==false){
+  //        tryRPM=true;
+  //        stepper.stop();
+  //        stepper.setRPM(curRPM);
+  //      }
+        update_tray_pos();
+        nh.spinOnce();
+  //      publish_sensors();  // currently overhead is too high, no point in this
+        lastDirn = spb_move(MAX_STEPS);
+  //      nh.loginfo(stepper.getCurrentRPM());
+  //      delayMicroseconds(750);
+  //      delay(1);
+        pub_timer3 = t3;
+      }
+    }
+  }
+
+
+
   
   stepper.disable();
   delay(300);

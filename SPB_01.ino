@@ -156,8 +156,6 @@ void publish_sensors(void) {
     us_msg.data = (int)measure_US();
     ir_msg.data = (int)measure_topIR();
     gh_msg.data = (int)glassHeight;
-    //    gh_msg.data = (int)stepper.step_count;  //DEBUG
-    //    gh_msg.data = abs(steps); //DEBUG
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
     pubGH.publish(&gh_msg);
@@ -165,9 +163,6 @@ void publish_sensors(void) {
     esDown_msg.data = es.enDown;
     pubEU.publish(&esUp_msg);
     pubED.publish(&esDown_msg);
-
-
-    
     pub_timer1 = t1;
   }
 }
@@ -334,6 +329,7 @@ void home_tray()
       nh.spinOnce();
       lastDirn = spb_move(-MAX_STEPS);
     }
+    
     else if (wait_time_micros > 100){ // EXPERIMENT put a timer in here to spin the node
       if (tryRPM==false){
         tryRPM=true;
@@ -343,10 +339,9 @@ void home_tray()
       update_tray_pos();
       nh.spinOnce();
       lastDirn = spb_move(-MAX_STEPS);
-//      nh.loginfo(stepper.getCurrentRPM());
-//      delayMicroseconds(750);
-//      delay(1);
+//      nh.loginfo(stepper.getCurrentRPM());s
     }
+    
 
   }
 //  nh.loginfo("home_tray complete");
