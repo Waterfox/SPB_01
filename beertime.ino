@@ -5,16 +5,16 @@ void zero_glass_arr(int b[], int arrSize){
 }
 
 void beer_time(){
-  side_detected = false;
+  side_detected = false; //not used
   zero_glass_arr(glassArr,L);
   zero_glass_arr(glassDev,L);
   glassAv=0;
   glassStdDev = 0;
   glassN = 0; //number of glass detections
   glassHeight = 0; //default low glass height val
-
   curRPM = 12; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
+  long loop_timer3 = 0;
 
   // 0. The tray is already lowered
 
@@ -25,69 +25,79 @@ void beer_time(){
   nh.loginfo("Raising the Tray");
   //baseline side IR measurement
   sideIR=measure_sideIR();
-  volatile int USnow = measure_US();
+  volatile int USnow = 0;
+  USnow = measure_US();
 
-/*
-  //Use the ultrasound to stop raising the tray -- should also use the tray position
-  while ((USnow > STOPDISTANCE) && (es.enUp == true)) //tray is at the top{  // USE ULTRASOUND  || measure_topIR() <STOPDISTANCE)
+
+  //Use the ultrasound to stop raising the tray 
+//  while ((measure_US() > STOPDISTANCE) && (es.enUp == true)) 
 //  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
-{
+  while(es.enUp)
+  {
 
     if ((!state)) {return;}  //E-STOP
     
     wait_time_micros = stepper.nextAction();
     if (wait_time_micros <= 0) {
-//       stepper.step_count = 0;
-        
-//        if (nh.connected()==false) {return;}
+      
+       if (nh.connected()==false) {return;}
 //       USnow = measure_US();
        update_tray_pos();
        nh.spinOnce();
 //      publish_sensors();
       
       //DETECT GLASS HEIGHT USING IR ***
-      /*
-      if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
-        side_detected = true;
-        //the of glass location based on the tray position when the glass is detected
-        glassTop = trayPosStp - SIDEIRPOS;
-      }
-      */
+      
+//      if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
+//        side_detected = true;
+//        //the of glass location based on the tray position when the glass is detected
+//        glassTop = trayPosStp - SIDEIRPOS;
+//      }
+      
 
       //DETECT GLASS HEIGHT USING CV ***
-      /* Measure glass top with CV
-       * Subtract the tray position
-       * Tray edge will be in frameat trayPosStp < 235
-       * (not used)Take the largest measurement - assume no false detections above glass rim)
-       * Save the measurement into an array
-       */
+//       Measure glass top with CV
+//       * Subtract the tray position
+//       * Tray edge will be in frameat trayPosStp < 235
+//       * (not used)Take the largest measurement - assume no false detections above glass rim)
+//       * Save the measurement into an array
+       
 
-
-//       if (trayPosStp > 260 && side_detected == false && linePosCV > 150 && glassN<L){
-//         /*log glass height measurement if conditions are met
+       
+       if (trayPosStp > 260  && linePosCV > 150 && glassN<L){
+//          log glass height measurement if conditions are met
 //          1. tray is low enough
-//          2. side hasn't been detected (not used)
-//          3. the linePosCV is below the top of the camera
-//         */
-//         glassTop = linePosCV; 
-//         glassBot = trayPosStp;
-//         int gh = glassBot - glassTop + GLASSCVFUDGE; //15mm fudge to account for lens angle!
-//         glassArr[glassN] = gh; //populate array with measurement
-//         glassN++;
-//      }
-/*
+//          2. the linePosCV is below the top of the camera
+//          3. logged less than L measurements
+         
+         glassTop = linePosCV; 
+         glassBot = trayPosStp;
+         int gh = glassBot - glassTop + GLASSCVFUDGE; //15mm fudge to account for lens angle!
+         glassArr[glassN] = gh; //populate array with measurement
+         glassN++;
+      }
+      
+
       lastDirn = spb_move(MAX_STEPS);
     }
-    else if (wait_time_micros >100){
-//        if (nh.connected()==false) {return;}
+    else if (wait_time_micros > 250){
+      long t3 = millis();
+      if (t3 - loop_timer3 > 250){ //only 
        update_tray_pos();
        nh.spinOnce();
        lastDirn = spb_move(MAX_STEPS);
+//       USnow = measure_US();
+       loop_timer3 = t3;
+      }
     }
   }
-  */
+  
+
+
+/*
+  //----------Experimental Code for raising without pinging -----------
   long pub_timer3 = 0;
-   //Experimental Code
+   
   volatile bool tryRPM = false;
   while (es.enUp) {
 
@@ -116,14 +126,12 @@ void beer_time(){
         nh.spinOnce();
   //      publish_sensors();  // currently overhead is too high, no point in this
         lastDirn = spb_move(MAX_STEPS);
-  //      nh.loginfo(stepper.getCurrentRPM());
-  //      delayMicroseconds(750);
-  //      delay(1);
+
         pub_timer3 = t3;
       }
     }
   }
-
+*/
 
 
   
@@ -166,11 +174,6 @@ void beer_time(){
   }
   else {glassHeight = 70;} // take the shortest case - don't overpour
 
-  
-  //if (glassHeight < 85){
-  //  glassHeight = 95; //default GH
-  //}
-  
         
    nh.loginfo("glassHeight measured: ");
    char output[8];
@@ -181,7 +184,7 @@ void beer_time(){
    nh.loginfo(output);
 
 
-    spb_move(400);
+    spb_move(400); // start moving up?
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
   curRPM = 6; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
