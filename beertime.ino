@@ -14,7 +14,7 @@ void beer_time(){
   glassHeight = 0; //default low glass height val
   curRPM = 12; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
-  long loop_timer3 = 0;
+
 
   // 0. The tray is already lowered
 
@@ -25,24 +25,34 @@ void beer_time(){
   nh.loginfo("Raising the Tray");
   //baseline side IR measurement
   sideIR=measure_sideIR();
-  volatile int USnow = 0;
-  USnow = measure_US();
 
+  for (short i;i<20;i++){ // fill the US average
+  USnow = measure_US();
+  }
 
   //Use the ultrasound to stop raising the tray 
 //  while ((measure_US() > STOPDISTANCE) && (es.enUp == true)) 
 //  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
-  while(es.enUp)
+//  while(es.enUp)
+  while ((USnow > STOPDISTANCE) && (es.enUp == true)) 
   {
 
     if ((!state)) {return;}  //E-STOP
     
     wait_time_micros = stepper.nextAction();
+    long t4 = millis();
     if (wait_time_micros <= 0) {
       
        if (nh.connected()==false) {return;}
-//       USnow = measure_US();
+
+      
+      if (t4 - loop_timer4 > 10){ // timer for ultrasound read
+       USnow = measure_US();
+       loop_timer4 = t4;
+      }
+      
        update_tray_pos();
+
        nh.spinOnce();
 //      publish_sensors();
       
@@ -80,11 +90,16 @@ void beer_time(){
 
       lastDirn = spb_move(MAX_STEPS);
     }
-    else if (wait_time_micros > 150){
+    else if (wait_time_micros > 300){
       long t3 = millis();
-      if (t3 - loop_timer3 > 300){ //only 
+      if (t3 - loop_timer3 > 200){ //timer for SPB move
        update_tray_pos();
        nh.spinOnce();
+   
+       if (t4 - loop_timer4 > 10){ //timer for ultrasound read
+        USnow = measure_US();
+        loop_timer4 = t4;
+      }
        lastDirn = spb_move(MAX_STEPS);
 //       USnow = measure_US();
        loop_timer3 = t3;
@@ -134,7 +149,7 @@ void beer_time(){
 */
 
 
-  
+  stepper.stop();
   stepper.disable();
   delay(300);
   //the bottom of the glass location based on
@@ -184,7 +199,12 @@ void beer_time(){
    nh.loginfo(output);
 
 
-    spb_move(400); // start moving up?
+    spb_move(-500); // start moving down?
+    delay(500);
+    stepper.stop();
+    stepper.disable();
+
+    
   //2. Begin filling! --------------------------------
   nh.loginfo("Begin filling!");
   curRPM = 6; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF

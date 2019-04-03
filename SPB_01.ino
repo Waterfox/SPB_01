@@ -55,9 +55,12 @@ int glassArr[L]; //array of gh measurements
 int glassDev[L]; //deviation from mean
 float glassAv =0; //average gh
 float glassStdDev = 0; //mean deviation
-
+float usVal =0;
+float topIRVal =0;
 volatile int curLightVal = 175;
-volatile int curRPM = RPM;
+int curRPM = RPM;
+float USnow = 0;
+
 unsigned wait_time_micros;
 
 long pub_timer1 = 0;
@@ -67,6 +70,8 @@ long sub_timer4 = 0;
 long LED_timer = 0;
 bool LED_state = 0;
 long RPM_timer = 0;
+long loop_timer3 = 0;
+long loop_timer4 = 0;
 bool CV_EN = false;
 bool CV_LINES_EN = false;
 ros::NodeHandle  nh;
@@ -304,10 +309,10 @@ void update_tray_pos(void) {
 }
 
 float measure_topIR() {
-  float topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
-  topIRAvg = topIRVal;
-  return topIR2dist(topIRAvg);
-  //  return topIRAvg;
+//  topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
+//  topIRAvg = topIRVal;
+//  return topIR2dist(topIRAvg);
+    return topIR2dist(float(analogRead(TOP_IR_PIN)));
 }
 
 int measure_sideIR() {
@@ -315,9 +320,10 @@ int measure_sideIR() {
 }
 
 float measure_US() {
-  float usVal = analogRead(US_PIN) * 0.05 + USAvg * 0.95;
-  USAvg = usVal;
-  return US2dist(USAvg);
+//  usVal = analogRead(US_PIN) * 0.05 + USAvg * 0.95;
+//  USAvg = usVal;
+//  return US2dist(USAvg);
+    return US2dist(analogRead(US_PIN)); //skip the average - this only works continuously 
 }
 
 
