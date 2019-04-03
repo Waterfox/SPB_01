@@ -80,9 +80,9 @@ void beer_time(){
 
       lastDirn = spb_move(MAX_STEPS);
     }
-    else if (wait_time_micros > 250){
+    else if (wait_time_micros > 150){
       long t3 = millis();
-      if (t3 - loop_timer3 > 250){ //only 
+      if (t3 - loop_timer3 > 300){ //only 
        update_tray_pos();
        nh.spinOnce();
        lastDirn = spb_move(MAX_STEPS);
@@ -236,7 +236,6 @@ while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
         lastDirn = spb_move(steps);
       } 
     }
-//    else delayMicroseconds(500);
   }
   
   digitalWrite(SOLENOID,false);  //Close the solenoid valve

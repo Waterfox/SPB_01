@@ -7,6 +7,7 @@
 #include <std_msgs/UInt16.h>
 #include <std_msgs/Bool.h>
 #include <stdlib.h>
+#include <std_srvs/Empty.h>
 
 /*
    rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
@@ -18,7 +19,7 @@
    2: Pouring
 */
 
-
+using std_srvs::Empty;
 
 
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
@@ -130,6 +131,12 @@ void cmd_led_cb(const std_msgs::UInt16& cmd_led_msg) {
   set_lights(curLightVal);
 }
 
+void beer_callback(const Empty::Request & req, Empty::Response & res)
+{
+  // Simulate function running for a non-deterministic amount of time
+  beer_time();
+}
+
 
 ros::Subscriber<std_msgs::UInt16> sub_cv("spb/lvl", cv_cb);
 ros::Subscriber<std_msgs::UInt16> sub_cv_lines("spb/level_lines", cv_lines_cb);
@@ -148,6 +155,7 @@ ros::Publisher pubGH("spb/glass_height", &gh_msg);
 ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 ros::Publisher pubEU("spb/esUp", &esUp_msg);
 ros::Publisher pubED("spb/esDown", &esDown_msg);
+ros::ServiceServer<Empty::Request, Empty::Response> beertime_server("beertime",&beer_callback);
 
 
 void publish_sensors(void) {
@@ -214,6 +222,7 @@ void setup() {
   nh.advertise(pubTP);
   nh.advertise(pubEU);
   nh.advertise(pubED);
+  nh.advertiseService(beertime_server);
   check_estop();
 
   // Home the Tray
@@ -418,6 +427,7 @@ void estop_LED() {
       LED_timer = t1;
     }
   }
+  //NH not connectected
   else if(state==3) {
     //pulse LED
     long t1 = millis();
