@@ -14,14 +14,42 @@ void beer_time(){
   glassHeight = 0; //default low glass height val
   curRPM = 12; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
-
-
+  useGlassHeightDetection = false;
+  defaultGlassHeight = GLASSHEIGHT_DEFAULT;
+//Use parameter server to set glass height params
+  if (nh.getParam("useGHD",&useGlassHeightDetection))
+  {
+    nh.loginfo("Retrieved param");
+    if (useGlassHeightDetection) {nh.loginfo("using glass height detection");}
+//    else {nh.loginfo("NOT using glass height detection");}
+  }
+  if (!useGlassHeightDetection)
+  {
+    nh.loginfo("No CV GH detection");
+    //If there us a glass height parameter use it
+    if (nh.getParam("GH",&defaultGlassHeight))
+    {
+      nh.loginfo("GH from params is:");
+      char output2[4];
+      itoa(defaultGlassHeight,output2,10);
+      nh.loginfo(output2);
+    }
+    //Otherwise take the firmware default of 160
+    else 
+    {
+      nh.loginfo("Default GH is:");
+      char output2[4];
+      itoa(defaultGlassHeight,output2,10);
+      nh.loginfo(output2);
+    }
+  }
+  
   // 0. The tray is already lowered
 
   // Turn on red button LED
   digitalWrite(STARTLED, HIGH);
   
-  // 1. Raise the tray ----------------------------
+  // 1. Raise the tray --------------------------------------------
   nh.loginfo("Raising the Tray");
   //baseline side IR measurement
   sideIR=measure_sideIR();
@@ -55,6 +83,7 @@ void beer_time(){
 
        nh.spinOnce();
 //      publish_sensors();
+
       
       //DETECT GLASS HEIGHT USING IR ***
       
@@ -64,40 +93,37 @@ void beer_time(){
 //        glassTop = trayPosStp - SIDEIRPOS;
 //      }
       
-
-      //DETECT GLASS HEIGHT USING CV ***
-//       Measure glass top with CV
-//       * Subtract the tray position
-//       * Tray edge will be in frameat trayPosStp < 235
-//       * (not used)Take the largest measurement - assume no false detections above glass rim)
-//       * Save the measurement into an array
-       
-
-       
-       if (trayPosStp > 290  && linePosCV > 150 && glassN<L){
-//          log glass height measurement if conditions are met
-//          1. tray is low enough
-//          2. the linePosCV is below the top of the camera
-//          3. logged less than L measurements
-         
-         glassTop = linePosCV; 
-         glassBot = trayPosStp;
-         int gh = glassBot - glassTop + GLASSCVFUDGE; //15mm fudge to account for lens angle!
-         //record measurements if N < 5 or if dX/X < 0.2
-         if (glassN<10) {
-          glassAv = glassAv*(glassN-1)/glassN + gh / glassN;
-          glassArr[glassN] = gh; //populate array with measurement
-          glassN++;
-         }
-         else if (abs(glassAv -gh)/glassAv < 0.2) {
-          glassAv = glassAv*(glassN-1)/glassN + gh / glassN;
-          glassArr[glassN] = gh; //populate array with measurement
-          glassN++;
-         }
-         
-//         glassN++;
+      if (useGlassHeightDetection)
+      {
+        //DETECT GLASS HEIGHT USING CV ***
+  //       Measure glass top with CV
+  //       * Subtract the tray position
+  //       * Tray edge will be in frameat trayPosStp < 235
+  //       * (not used)Take the largest measurement - assume no false detections above glass rim)
+  //       * Save the measurement into an array
+              
+         if (trayPosStp > 290  && linePosCV > 150 && glassN<L){
+  //          log glass height measurement if conditions are met
+  //          1. tray is low enough
+  //          2. the linePosCV is below the top of the camera
+  //          3. logged less than L measurements
+           
+           glassTop = linePosCV; 
+           glassBot = trayPosStp;
+           int gh = glassBot - glassTop + GLASSCVFUDGE; //15mm fudge to account for lens angle!
+           //record measurements if N < 5 or if dX/X < 0.2
+           if (glassN<10) {
+            glassAv = glassAv*(glassN-1)/glassN + gh / glassN;
+            glassArr[glassN] = gh; //populate array with measurement
+            glassN++;
+           }
+           else if (abs(glassAv -gh)/glassAv < 0.2) {
+            glassAv = glassAv*(glassN-1)/glassN + gh / glassN;
+            glassArr[glassN] = gh; //populate array with measurement
+            glassN++;
+           }         
+        }
       }
-      
 
       lastDirn = spb_move(MAX_STEPS);
     }
@@ -168,52 +194,61 @@ void beer_time(){
   //glassBot = trayPosStp - STOPDISTANCE;
   glassAv=0;
 
-  //PROCESS GLASS HEIGHT FROM CV ***
-  nh.loginfo("processing glassHeight");
-  if (glassN > 5){ //if we have enough measurements
-    nh.loginfo("processing av glassHeight");
-    for (short i=0;i<glassN;i++){
-      char out[4];
-      itoa(glassArr[i],out,10);
-      nh.loginfo(out);
-      glassAv = glassAv + glassArr[i];
-    }
-    glassAv = glassAv / glassN;
-    //Use Average only - comment below
-    
-    //reject outliers
-    for (short i=0;i<glassN;i++){
-      glassDev[i] = abs(glassArr[i] - int(glassAv)); // deviation
-      glassStdDev = glassStdDev + glassDev[i]*glassDev[i]; //add to top half of STD
-    }
-      glassStdDev = sqrt(glassStdDev / (glassN-1)); // standard deviation
-      glassAv = 0;
-      int AvCnt = 0;
-    for (short i=0;i<glassN;i++){
-      if (glassDev[i]/glassStdDev < 1.0){ // if measurement is within 1 std, use in average
+
+  if (useGlassHeightDetection)
+  {
+    //PROCESS GLASS HEIGHT FROM CV ***
+    nh.loginfo("processing glassHeight");
+    if (glassN > 5){ //if we have enough measurements
+      nh.loginfo("processing av glassHeight");
+      for (short i=0;i<glassN;i++){
+        char out[4];
+        itoa(glassArr[i],out,10);
+        nh.loginfo(out);
         glassAv = glassAv + glassArr[i];
-        AvCnt++;
       }
+      glassAv = glassAv / glassN;
+      //Use Average only - comment below
+      
+      //reject outliers
+      for (short i=0;i<glassN;i++){
+        glassDev[i] = abs(glassArr[i] - int(glassAv)); // deviation
+        glassStdDev = glassStdDev + glassDev[i]*glassDev[i]; //add to top half of STD
+      }
+        glassStdDev = sqrt(glassStdDev / (glassN-1)); // standard deviation
+        glassAv = 0;
+        int AvCnt = 0;
+      for (short i=0;i<glassN;i++){
+        if (glassDev[i]/glassStdDev < 1.0){ // if measurement is within 1 std, use in average
+          glassAv = glassAv + glassArr[i];
+          AvCnt++;
+        }
+      }
+      glassAv = glassAv/AvCnt; // new average with only 1std measurementsc
+      glassHeight = int(glassAv); //temp
     }
-    glassAv = glassAv/AvCnt; // new average with only 1std measurementsc
-    glassHeight = int(glassAv); //temp
+    else {glassHeight = 70;} // if there are not enough measurements take the shortest case - don't overpour
+    
+    nh.loginfo("glassHeight measured: ");
+    char output[8];
+    itoa(glassAv,output,10);
+    nh.loginfo(output);
+    itoa(glassN,output,10);
+    nh.loginfo("Count: ");
+    nh.loginfo(output);    
   }
-  else {glassHeight = 70;} // take the shortest case - don't overpour
 
-        
-   nh.loginfo("glassHeight measured: ");
-   char output[8];
-   itoa(glassAv,output,10);
-   nh.loginfo(output);
-   itoa(glassN,output,10);
-   nh.loginfo("Count: ");
-   nh.loginfo(output);
+  //not using glass height detection
+  else
+  {
+    glassHeight = defaultGlassHeight;
+  }
 
 
-    spb_move(-500); // start moving down?
-    delay(500);
-    stepper.stop();
-    stepper.disable();
+  spb_move(-500); // start moving down?
+  delay(500);
+  stepper.stop();
+  stepper.disable();
 
     
   //2. Begin filling! --------------------------------
@@ -223,6 +258,7 @@ void beer_time(){
 //  stepper.enable();
 //  spb_move(-100);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
+  delay(800);
   loop_timer3 = 0;
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
@@ -278,7 +314,7 @@ while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
           digitalWrite(SOLENOID,LOW);
           return;
         }
-
+      //FOAM ALERT stop if there is too much foam
       if ((measure_topIR() < trayPosStp - glassHeight + 14)||(measure_US() < trayPosStp - glassHeight + 14))
       { 
         //--If foam is within 10mm from top of glass, break 

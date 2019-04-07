@@ -45,6 +45,9 @@ int lastDirn = 0;
 int steps = 0;
 int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 
+int useGlassHeightDetection = false;
+int defaultGlassHeight = GLASSHEIGHT_DEFAULT;
+int defaultGlassBottom = GLASSBOTTOM_DETAULT; //used in the future to elminate ultrasound
 bool side_detected = false;
 int glassTop = 0;
 int glassBot = 0;
