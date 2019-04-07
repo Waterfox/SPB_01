@@ -7,6 +7,7 @@
 #include <std_msgs/UInt16.h>
 #include <std_msgs/Bool.h>
 #include <stdlib.h>
+#include <std_srvs/Empty.h>
 
 /*
    rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
@@ -18,7 +19,7 @@
    2: Pouring
 */
 
-
+using std_srvs::Empty;
 
 
 DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
@@ -54,9 +55,12 @@ int glassArr[L]; //array of gh measurements
 int glassDev[L]; //deviation from mean
 float glassAv =0; //average gh
 float glassStdDev = 0; //mean deviation
-
-int curLightVal = 175;
+float usVal =0;
+float topIRVal =0;
+volatile int curLightVal = 175;
 int curRPM = RPM;
+float USnow = 0;
+
 unsigned wait_time_micros;
 
 long pub_timer1 = 0;
@@ -66,6 +70,8 @@ long sub_timer4 = 0;
 long LED_timer = 0;
 bool LED_state = 0;
 long RPM_timer = 0;
+long loop_timer3 = 0;
+long loop_timer4 = 0;
 bool CV_EN = false;
 bool CV_LINES_EN = false;
 ros::NodeHandle  nh;
@@ -130,6 +136,12 @@ void cmd_led_cb(const std_msgs::UInt16& cmd_led_msg) {
   set_lights(curLightVal);
 }
 
+void beer_callback(const Empty::Request & req, Empty::Response & res)
+{
+  // Simulate function running for a non-deterministic amount of time
+  beer_time();
+}
+
 
 ros::Subscriber<std_msgs::UInt16> sub_cv("spb/lvl", cv_cb);
 ros::Subscriber<std_msgs::UInt16> sub_cv_lines("spb/level_lines", cv_lines_cb);
@@ -144,10 +156,11 @@ std_msgs::Bool esUp_msg;
 std_msgs::Bool esDown_msg;
 ros::Publisher pubUS("spb/us", &us_msg);
 ros::Publisher pubIR("spb/ir", &ir_msg);
-ros::Publisher pubGH("spb/glass_height", &gh_msg);
+//ros::Publisher pubGH("spb/glass_height", &gh_msg);
 ros::Publisher pubTP("spb/tray_pos", &tp_msg);
-ros::Publisher pubEU("spb/esUp", &esUp_msg);
-ros::Publisher pubED("spb/esDown", &esDown_msg);
+//ros::Publisher pubEU("spb/esUp", &esUp_msg);
+//ros::Publisher pubED("spb/esDown", &esDown_msg);
+ros::ServiceServer<Empty::Request, Empty::Response> beertime_server("beertime",&beer_callback);
 
 
 void publish_sensors(void) {
@@ -155,19 +168,14 @@ void publish_sensors(void) {
   if (t1 - pub_timer1 > TPUB1) {
     us_msg.data = (int)measure_US();
     ir_msg.data = (int)measure_topIR();
-    gh_msg.data = (int)glassHeight;
-    //    gh_msg.data = (int)stepper.step_count;  //DEBUG
-    //    gh_msg.data = abs(steps); //DEBUG
+//    gh_msg.data = (int)glassHeight;
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
-    pubGH.publish(&gh_msg);
-    esUp_msg.data = es.enUp;
-    esDown_msg.data = es.enDown;
-    pubEU.publish(&esUp_msg);
-    pubED.publish(&esDown_msg);
-
-
-    
+//    pubGH.publish(&gh_msg);
+//    esUp_msg.data = es.enUp;
+//    esDown_msg.data = es.enDown;
+//    pubEU.publish(&esUp_msg);
+//    pubED.publish(&esDown_msg);
     pub_timer1 = t1;
   }
 }
@@ -215,10 +223,11 @@ void setup() {
   nh.subscribe(sub_led);
   nh.advertise(pubUS);
   nh.advertise(pubIR);
-  nh.advertise(pubGH);
+//  nh.advertise(pubGH);
   nh.advertise(pubTP);
-  nh.advertise(pubEU);
-  nh.advertise(pubED);
+//  nh.advertise(pubEU);
+//  nh.advertise(pubED);
+  nh.advertiseService(beertime_server);
   check_estop();
 
   // Home the Tray
@@ -300,10 +309,10 @@ void update_tray_pos(void) {
 }
 
 float measure_topIR() {
-  float topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
-  topIRAvg = topIRVal;
-  return topIR2dist(topIRAvg);
-  //  return topIRAvg;
+//  topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
+//  topIRAvg = topIRVal;
+//  return topIR2dist(topIRAvg);
+    return topIR2dist(float(analogRead(TOP_IR_PIN)));
 }
 
 int measure_sideIR() {
@@ -311,14 +320,16 @@ int measure_sideIR() {
 }
 
 float measure_US() {
-  float usVal = analogRead(US_PIN) * 0.05 + USAvg * 0.95;
-  USAvg = usVal;
-  return US2dist(USAvg);
+//  usVal = analogRead(US_PIN) * 0.05 + USAvg * 0.95;
+//  USAvg = usVal;
+//  return US2dist(USAvg);
+    return US2dist(analogRead(US_PIN)); //skip the average - this only works continuously 
 }
 
 
 void home_tray()
 {
+  volatile bool tryRPM = false;
   curRPM = 12; //raise RPM 12 working
   stepper.setRPM(curRPM);
 
@@ -333,11 +344,19 @@ void home_tray()
       nh.spinOnce();
       lastDirn = spb_move(-MAX_STEPS);
     }
-    else {
-//      nh.loginfo(stepper.getCurrentRPM());
-//      delayMicroseconds(750);
-//      delay(1);
+    
+    else if (wait_time_micros > 100){ // EXPERIMENT put a timer in here to spin the node
+      if (tryRPM==false){
+        tryRPM=true;
+        stepper.stop();
+        stepper.setRPM(curRPM);
+      }
+      update_tray_pos();
+      nh.spinOnce();
+      lastDirn = spb_move(-MAX_STEPS);
+//      nh.loginfo(stepper.getCurrentRPM());s
     }
+    
 
   }
 //  nh.loginfo("home_tray complete");
@@ -414,6 +433,7 @@ void estop_LED() {
       LED_timer = t1;
     }
   }
+  //NH not connectected
   else if(state==3) {
     //pulse LED
     long t1 = millis();
