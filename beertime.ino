@@ -74,7 +74,7 @@ void beer_time(){
        
 
        
-       if (trayPosStp > 260  && linePosCV > 150 && glassN<L){
+       if (trayPosStp > 290  && linePosCV > 150 && glassN<L){
 //          log glass height measurement if conditions are met
 //          1. tray is low enough
 //          2. the linePosCV is below the top of the camera
@@ -83,8 +83,19 @@ void beer_time(){
          glassTop = linePosCV; 
          glassBot = trayPosStp;
          int gh = glassBot - glassTop + GLASSCVFUDGE; //15mm fudge to account for lens angle!
-         glassArr[glassN] = gh; //populate array with measurement
-         glassN++;
+         //record measurements if N < 5 or if dX/X < 0.2
+         if (glassN<10) {
+          glassAv = glassAv*(glassN-1)/glassN + gh / glassN;
+          glassArr[glassN] = gh; //populate array with measurement
+          glassN++;
+         }
+         else if (abs(glassAv -gh)/glassAv < 0.2) {
+          glassAv = glassAv*(glassN-1)/glassN + gh / glassN;
+          glassArr[glassN] = gh; //populate array with measurement
+          glassN++;
+         }
+         
+//         glassN++;
       }
       
 
@@ -155,7 +166,7 @@ void beer_time(){
   //the bottom of the glass location based on
   //DETECT GLASS HEIGHT USING IR ***
   //glassBot = trayPosStp - STOPDISTANCE;
-
+  glassAv=0;
 
   //PROCESS GLASS HEIGHT FROM CV ***
   nh.loginfo("processing glassHeight");
@@ -212,7 +223,7 @@ void beer_time(){
 //  stepper.enable();
 //  spb_move(-100);
   digitalWrite(SOLENOID,true);  //Open the solenoid valve
-  
+  loop_timer3 = 0;
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
 //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
 while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
@@ -255,6 +266,37 @@ while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET){
          
         lastDirn = spb_move(steps);
       } 
+    }
+    else if (wait_time_micros > 300) {
+      long t3 = millis();
+      if (t3 - loop_timer3 > 200){ //timer for SPB move
+        update_tray_pos();
+        publish_sensors();
+        nh.spinOnce();
+        if ((!state)) {return;}  //E-STOP
+        if (nh.connected()==false) {
+          digitalWrite(SOLENOID,LOW);
+          return;
+        }
+
+      if ((measure_topIR() < trayPosStp - glassHeight + 14)||(measure_US() < trayPosStp - glassHeight + 14))
+      { 
+        //--If foam is within 10mm from top of glass, break 
+        nh.loginfo("Foam Alert!");
+        break;
+      }
+  //    Use the CV reading
+        surfPos = surfPosCV;
+  
+  //    CONTROL LOOP
+        steps = 0;
+        steps = int((SETPOINT + TUBEPOS - surfPos)*-STEPSPERMM); 
+        // adjust the tray - only downwards
+        if ((steps < 0) && (steps < -DEADBAND)) {         
+          lastDirn = spb_move(steps);
+        } 
+      loop_timer3 = t3; 
+      }
     }
   }
   
