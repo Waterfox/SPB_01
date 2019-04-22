@@ -70,7 +70,7 @@
 #define TUBEPOS 180 //mm tube length
 #define STOPDISTANCE 190 //190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
 #define SETPOINT 25  // the tube will be X mm from surface
-#define SURFOFFSET 25 // fill the glass this far from the glass top
+#define SURFOFFSET 40 // fill the glass this far from the glass top
 #define GLASSCVFUDGE 20 //fudge factor when measuring the glass height with CV - accounts for lens angle
 #define TPUB1 800 // publish period in ms of most topics
 #define TPUB2 500 //publish period in ms of tray topic
