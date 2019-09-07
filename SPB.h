@@ -35,6 +35,10 @@
 #define MODE1 11
 #define MODE2 12
 
+//VL51L1X, VL6180X 
+#define topCE 22  //VL51L1X
+#define sideCE 23 //VL6180X 
+
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
 #define MOTOR_STEPS 400 // steps per rotation
 #define RPM 9 // 240 max
@@ -65,7 +69,8 @@
 #define NUMPIXELS 26 // Number of LEDs
 #define LED_START_VAL 180 // Starting brightness
 
-#define SIDEIRTHRESH 1.22 // ADC fraction increase when glass detected
+//#define SIDEIRTHRESH 1.22 // ADC fraction increase when glass detected
+#define SIDEIRTHRESH 100 // mm VL6180X
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
 #define STOPDISTANCE 190 //190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)

@@ -14,7 +14,8 @@ void beer_time(){
   glassHeight = 0; //default low glass height val
   curRPM = 12; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
-  useGlassHeightDetection = false;
+  useGlassHeightDetection = true;
+  useCVGlassHeightDetection = false;
   defaultGlassHeight = GLASSHEIGHT_DEFAULT;
 //Use parameter server to set glass height params
   if (nh.getParam("useGHD",&useGlassHeightDetection))
@@ -25,7 +26,7 @@ void beer_time(){
   }
   if (!useGlassHeightDetection)
   {
-    nh.loginfo("No CV GH detection");
+    nh.loginfo("No GH detection");
     //If there us a glass height parameter use it
     if (nh.getParam("GH",&defaultGlassHeight))
     {
@@ -51,8 +52,6 @@ void beer_time(){
   
   // 1. Raise the tray --------------------------------------------
   nh.loginfo("Raising the Tray");
-  //baseline side IR measurement
-  sideIR=measure_sideIR();
 
   for (short i;i<20;i++){ // fill the US average
   USnow = measure_US();
@@ -86,14 +85,17 @@ void beer_time(){
 
       
       //DETECT GLASS HEIGHT USING IR ***
-      
-//      if ((measure_sideIR()/sideIR) > SIDEIRTHRESH && side_detected == false){
-//        side_detected = true;
-//        //the of glass location based on the tray position when the glass is detected
-//        glassTop = trayPosStp - SIDEIRPOS;
-//      }
-      
+
       if (useGlassHeightDetection)
+      {
+        if ((measure_sideIR()) < SIDEIRTHRESH && side_detected == false){
+          side_detected = true;
+          //the of glass location based on the tray position when the glass is detected
+          glassHeight = trayPosStp - SIDEIRPOS;
+        }
+      }
+      
+      if (useCVGlassHeightDetection)
       {
         //DETECT GLASS HEIGHT USING CV ***
   //       Measure glass top with CV
@@ -146,46 +148,6 @@ void beer_time(){
   
 
 
-/*
-  //----------Experimental Code for raising without pinging -----------
-  long pub_timer3 = 0;
-   
-  volatile bool tryRPM = false;
-  while (es.enUp) {
-
-    if (!state) {
-      break;
-    }
-    wait_time_micros = stepper.nextAction();
-    
-    if (wait_time_micros <= 0) {
-      update_tray_pos();
-      nh.spinOnce();
-//      publish_sensors(); // currently overhead is too high, no point in this
-      lastDirn = spb_move(MAX_STEPS);
-    }
-
-    
-    else if (wait_time_micros > 200){ // EXPERIMENT put a timer in here to spin the node
-      long t3 = millis();
-      if (t3 - pub_timer3 > 500){ //only 
-  //      if (tryRPM==false){
-  //        tryRPM=true;
-  //        stepper.stop();
-  //        stepper.setRPM(curRPM);
-  //      }
-        update_tray_pos();
-        nh.spinOnce();
-  //      publish_sensors();  // currently overhead is too high, no point in this
-        lastDirn = spb_move(MAX_STEPS);
-
-        pub_timer3 = t3;
-      }
-    }
-  }
-*/
-
-
   stepper.stop();
   stepper.disable();
   delay(300);
@@ -194,8 +156,16 @@ void beer_time(){
   //glassBot = trayPosStp - STOPDISTANCE;
   glassAv=0;
 
-
   if (useGlassHeightDetection)
+  {
+    nh.loginfo("glassHeight measured with ToF: ");
+    char output[8];
+    itoa(glassHeight,output,10);
+    nh.loginfo(output);
+  }
+
+
+  if (useCVGlassHeightDetection)
   {
     //PROCESS GLASS HEIGHT FROM CV ***
     nh.loginfo("processing glassHeight");
@@ -239,7 +209,7 @@ void beer_time(){
   }
 
   //not using glass height detection
-  else
+  if (!(useCVGlassHeightDetection || useGlassHeightDetection))
   {
     glassHeight = defaultGlassHeight;
   }

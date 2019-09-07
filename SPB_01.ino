@@ -8,6 +8,10 @@
 #include <std_msgs/Bool.h>
 #include <stdlib.h>
 #include <std_srvs/Empty.h>
+#include <Wire.h>
+#include <VL53L1X.h>
+#include <VL6180X.h>
+
 
 /*
    rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
@@ -27,6 +31,9 @@ DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, 
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
+VL53L1X top_sensor;
+VL6180X side_sensor;
+
 
 float topIRAvg = 0;
 float USAvg = 0;
@@ -45,7 +52,8 @@ int lastDirn = 0;
 int steps = 0;
 int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 
-int useGlassHeightDetection = false;
+int useGlassHeightDetection = true;
+int useCVGlassHeightDetection = false;
 int defaultGlassHeight = GLASSHEIGHT_DEFAULT;
 int defaultGlassBottom = GLASSBOTTOM_DETAULT; //used in the future to elminate ultrasound
 bool side_detected = false;
@@ -194,6 +202,44 @@ void publish_tray(void) {
 //**********************************************
 void setup() {
   state = 1;
+
+  //configure the VLX ToF sensors
+  Wire.begin();
+  Wire.setClock(400000); // use 400 kHz I2C
+
+  //change the top ToF i2c address
+  pinMode(topCE, INPUT); // will float high
+  pinMode(sideCE, OUTPUT);
+  digitalWrite(sideCE, LOW);
+  delay(50);
+
+  top_sensor.setTimeout(500);
+
+   if (!top_sensor.init())
+    {
+      while (1);
+    }
+    top_sensor.setDistanceMode(VL53L1X::Short);
+    top_sensor.setMeasurementTimingBudget(20000);
+    //
+    //  // Start continuous readings at a rate of one measurement every 50 ms (the
+    //  // inter-measurement period). This period should be at least as long as the
+    //  // timing budget.
+    top_sensor.startContinuous(20);
+  
+    top_sensor.setAddress(0x31);
+    delay(50);
+    
+  //  delay(2000);
+  //  Serial.println(top_sensor.getAddress());
+    pinMode(sideCE, INPUT); // will float high, turn side back on
+    delay(50);
+    side_sensor.init();
+    side_sensor.configureDefault();
+    side_sensor.setTimeout(500);
+  
+  
+  
   pinMode(SOLENOID, OUTPUT);
   pinMode(US_PWR, OUTPUT);
 
@@ -315,11 +361,20 @@ float measure_topIR() {
 //  topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
 //  topIRAvg = topIRVal;
 //  return topIR2dist(topIRAvg);
-    return topIR2dist(float(analogRead(TOP_IR_PIN)));
+//    return topIR2dist(float(analogRead(TOP_IR_PIN))); ORIGINAL
+
+    //VL53L1X
+    top_sensor.read();
+    return top_sensor.ranging_data.range_mm;
+
+
 }
 
 int measure_sideIR() {
-  return analogRead(SIDE_IR_PIN);
+//  return analogRead(SIDE_IR_PIN); ORGINAL
+
+    //VL6180X
+    return side_sensor.readRangeSingleMillimeters(); 
 }
 
 float measure_US() {
