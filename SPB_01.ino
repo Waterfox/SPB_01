@@ -10,7 +10,7 @@
 #include <std_srvs/Empty.h>
 #include <Wire.h>
 #include <VL53L1X.h>
-#include <VL6180X.h>
+//#include <VL6180X.h>
 
 
 /*
@@ -32,8 +32,8 @@ DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 VL53L1X top_sensor;
-VL6180X side_sensor;
-
+VL53L1X side_sensor;
+bool VLinitfail = false;
 
 float topIRAvg = 0;
 float USAvg = 0;
@@ -161,12 +161,14 @@ ros::Subscriber<std_msgs::Bool> sub_valve("spb/cmd_valve", cmd_valve_cb);
 ros::Subscriber<std_msgs::UInt16> sub_led("spb/cmd_led", cmd_led_cb);
 std_msgs::UInt16 us_msg;
 std_msgs::UInt16 ir_msg;
+std_msgs::UInt16 sir_msg;
 std_msgs::UInt16 gh_msg;
 std_msgs::UInt16 tp_msg;
 std_msgs::Bool esUp_msg;
 std_msgs::Bool esDown_msg;
 ros::Publisher pubUS("spb/us", &us_msg);
 ros::Publisher pubIR("spb/ir", &ir_msg);
+ros::Publisher pubSIR("spb/sir", &sir_msg);
 //ros::Publisher pubGH("spb/glass_height", &gh_msg);
 ros::Publisher pubTP("spb/tray_pos", &tp_msg);
 //ros::Publisher pubEU("spb/esUp", &esUp_msg);
@@ -179,9 +181,11 @@ void publish_sensors(void) {
   if (t1 - pub_timer1 > TPUB1) {
     us_msg.data = (int)measure_US();
     ir_msg.data = (int)measure_topIR();
+    sir_msg.data = (int)measure_sideIR();
 //    gh_msg.data = (int)glassHeight;
     pubUS.publish(&us_msg);
     pubIR.publish(&ir_msg);
+    pubSIR.publish(&sir_msg);
 //    pubGH.publish(&gh_msg);
 //    esUp_msg.data = es.enUp;
 //    esDown_msg.data = es.enDown;
@@ -201,7 +205,7 @@ void publish_tray(void) {
 }
 //**********************************************
 void setup() {
-  state = 1;
+  state = 1; // Oh shazbot what was this? Estop condition?
 
   //configure the VLX ToF sensors
   Wire.begin();
@@ -217,16 +221,11 @@ void setup() {
 
    if (!top_sensor.init())
     {
-      while (1);
+      VLinitfail = true;
     }
     top_sensor.setDistanceMode(VL53L1X::Short);
     top_sensor.setMeasurementTimingBudget(20000);
-    //
-    //  // Start continuous readings at a rate of one measurement every 50 ms (the
-    //  // inter-measurement period). This period should be at least as long as the
-    //  // timing budget.
     top_sensor.startContinuous(20);
-  
     top_sensor.setAddress(0x31);
     delay(50);
     
@@ -234,9 +233,13 @@ void setup() {
   //  Serial.println(top_sensor.getAddress());
     pinMode(sideCE, INPUT); // will float high, turn side back on
     delay(50);
-    side_sensor.init();
-    side_sensor.configureDefault();
-    side_sensor.setTimeout(500);
+   if (!side_sensor.init())
+    {
+      VLinitfail = true;
+    }
+    side_sensor.setDistanceMode(VL53L1X::Short);
+    side_sensor.setMeasurementTimingBudget(20000);
+    side_sensor.startContinuous(20);
   
   
   
@@ -272,6 +275,7 @@ void setup() {
   nh.subscribe(sub_led);
   nh.advertise(pubUS);
   nh.advertise(pubIR);
+  nh.advertise(pubSIR);
 //  nh.advertise(pubGH);
   nh.advertise(pubTP);
 //  nh.advertise(pubEU);
@@ -280,6 +284,8 @@ void setup() {
   check_estop();
 
   // Home the Tray
+  if (VLinitfail) { nh.loginfo("VL sensor init fail");}
+  
   nh.loginfo("Home the tray");
   home_tray();
   
@@ -304,7 +310,7 @@ void loop() {
   //    stepper.disable();
   //  }
   // else {delay(1);}
-
+//  if (VLinitfail) { nh.loginfo("VL sensor init fail"); delay(2000);}
   delay(1);
 
 }
@@ -357,7 +363,7 @@ void update_tray_pos(void) {
   publish_tray();
 }
 
-float measure_topIR() {
+int measure_topIR() {
 //  topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
 //  topIRAvg = topIRVal;
 //  return topIR2dist(topIRAvg);
@@ -367,14 +373,17 @@ float measure_topIR() {
     top_sensor.read();
     return top_sensor.ranging_data.range_mm;
 
-
 }
 
 int measure_sideIR() {
 //  return analogRead(SIDE_IR_PIN); ORGINAL
 
     //VL6180X
-    return side_sensor.readRangeSingleMillimeters(); 
+//    return side_sensor.readRangeSingleMillimeters();
+//    return side_sensor.readRangeContinuousMillimeters();
+    //VL53L1X
+    side_sensor.read();
+    return side_sensor.ranging_data.range_mm;
 }
 
 float measure_US() {
