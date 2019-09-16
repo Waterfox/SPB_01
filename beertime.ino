@@ -54,12 +54,13 @@ void beer_time() {
   for (short i; i < 20; i++) { // fill the US average
     USnow = measure_US();
   }
+  measure_topIR();
 
   //Use the ultrasound to stop raising the tray
   //  while ((measure_US() > STOPDISTANCE) && (es.enUp == true))
   //  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
   //  while(es.enUp)
-  while ((USnow > STOPDISTANCE && measure_topIR > STOPDISTANCE ) && (es.enUp == true))
+  while ((USnow > STOPDISTANCE && tir > STOPDISTANCE ) && (es.enUp == true)) /// UNTESTED
   {
     if ((!state)) {
       return; //E-STOP
@@ -76,6 +77,7 @@ void beer_time() {
       if (t4 - loop_timer4 > 50) { // timer for ultrasound read
         USnow = measure_US();
         loop_timer4 = t4;
+//        measure_topIR();
       }
 //      stepper.stop();
       side_ghd (); 
@@ -89,15 +91,17 @@ void beer_time() {
       lastDirn = spb_move(MAX_STEPS);
     }
     else if (wait_time_micros > 300) {
+      
       long t3 = millis();
       if (t3 - loop_timer3 > 200) { //timer for SPB move
         update_tray_pos();
         nh.spinOnce();
 
-        if (t4 - loop_timer4 > 50) { //timer for ultrasound read
+        if (t4 - loop_timer4 > 300) { //timer for ultrasound read
           USnow = measure_US();
+          measure_topIR();
           loop_timer4 = t4;
-//          side_ghd (); 
+          side_ghd (); 
         }
         lastDirn = spb_move(MAX_STEPS);
         //       USnow = measure_US();
@@ -148,8 +152,8 @@ void beer_time() {
 
       //FOAM ALERT stop if there is too much foam
       //      if (ir_msg.data < trayPosStp - glassHeight + 10){
-      int tir = measure_topIR();
-      if ((tir < trayPosStp - glassHeight + 25) || (measure_US() < trayPosStp - glassHeight + 15))
+//      tir = measure_topIR();
+      if ((tir < trayPosStp - glassHeight + SURFOFFSET) || (measure_US() < trayPosStp - glassHeight + SURFOFFSET))
       {
         //--If foam is within 10mm from top of glass, break
         nh.loginfo("Foam Alert!");
@@ -192,8 +196,8 @@ void beer_time() {
           return;
         }
         //FOAM ALERT stop if there is too much foam
-        int tir = measure_topIR();
-        if ((tir < trayPosStp - glassHeight + 25) || (measure_US() < trayPosStp - glassHeight + 15))
+//        measure_topIR();
+        if ((tir < trayPosStp - glassHeight + SURFOFFSET) || (measure_US() < trayPosStp - glassHeight + SURFOFFSET))
         {
           //--If foam is within 10mm from top of glass, break
           nh.loginfo("Foam Alert!");

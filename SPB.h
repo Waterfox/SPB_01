@@ -43,7 +43,7 @@
 #define MOTOR_STEPS 400 // steps per rotation
 #define RPM 9 // 240 max
 #define RPM_POUR 4
-#define MAX_STEPS 400 //max steps in one loop
+#define MAX_STEPS 400 //max steps in one loop 400
 #define DEADBAND 15 // deadband steps
 #define STEPSPERMM 100.0 //steps per mm of travel
 #define PITCH 4 //mm per rotation
@@ -75,7 +75,7 @@
 #define TUBEPOS 180 //mm tube length
 #define STOPDISTANCE 190 //190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
 #define SETPOINT 5  // the tube will be X mm from surface
-#define SURFOFFSET 30 // fill the glass this far from the glass top
+#define SURFOFFSET  35// fill the glass this far from the glass top
 #define GLASSCVFUDGE 20 //fudge factor when measuring the glass height with CV - accounts for lens angle
 #define TPUB1 800 // publish period in ms of most topics
 #define TPUB2 500 //publish period in ms of tray topic

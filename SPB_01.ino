@@ -71,6 +71,7 @@ float topIRVal =0;
 volatile int curLightVal = 175;
 int curRPM = RPM;
 float USnow = 0;
+int tir=0;
 
 unsigned wait_time_micros;
 
@@ -371,8 +372,8 @@ int measure_topIR() {
 
     //VL53L1X
     top_sensor.read();
-    return top_sensor.ranging_data.range_mm;
-
+    tir = top_sensor.ranging_data.range_mm;
+    return tir;
 }
 
 int measure_sideIR() {
