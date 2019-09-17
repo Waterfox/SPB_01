@@ -35,11 +35,15 @@
 #define MODE1 11
 #define MODE2 12
 
+//VL51L1X, VL6180X 
+#define topCE 17  //VL51L1X
+#define sideCE 16 //VL6180X 
+
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
 #define MOTOR_STEPS 400 // steps per rotation
 #define RPM 9 // 240 max
 #define RPM_POUR 4
-#define MAX_STEPS 400 //max steps in one loop
+#define MAX_STEPS 400 //max steps in one loop 400
 #define DEADBAND 15 // deadband steps
 #define STEPSPERMM 100.0 //steps per mm of travel
 #define PITCH 4 //mm per rotation
@@ -65,12 +69,13 @@
 #define NUMPIXELS 26 // Number of LEDs
 #define LED_START_VAL 180 // Starting brightness
 
-#define SIDEIRTHRESH 1.22 // ADC fraction increase when glass detected
+//#define SIDEIRTHRESH 1.22 // ADC fraction increase when glass detected
+#define SIDEIRTHRESH 125 // mm VL6180X
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
 #define STOPDISTANCE 190 //190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
-#define SETPOINT 25  // the tube will be X mm from surface
-#define SURFOFFSET 30 // fill the glass this far from the glass top
+#define SETPOINT 5  // the tube will be X mm from surface
+#define SURFOFFSET  35// fill the glass this far from the glass top
 #define GLASSCVFUDGE 20 //fudge factor when measuring the glass height with CV - accounts for lens angle
 #define TPUB1 800 // publish period in ms of most topics
 #define TPUB2 500 //publish period in ms of tray topic
@@ -80,7 +85,7 @@ float US2dist(int);
 void manual_scroll();
 int spb_move(int);
 void update_tray_pos(void);
-float measure_topIR();
+int measure_topIR();
 int measure_sideIR();
 float measure_US();
 float measure_CV();
@@ -93,3 +98,5 @@ void publish_tray(void);
 void check_nh(void);
 void estop_LED(void);
 void zero_glass_arr(int,int);
+void side_ghd(void);
+void process_glass_height(void);
