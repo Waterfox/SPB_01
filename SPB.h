@@ -28,6 +28,7 @@
   #define RAMPS_D9_PIN   9
 #endif  
 
+#define ROS false
 
 //Stepper Driver
 #include "DRV8825.h"

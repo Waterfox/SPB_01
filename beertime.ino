@@ -14,49 +14,52 @@ void beer_time() {
   useCVGlassHeightDetection = false;
   defaultGlassHeight = GLASSHEIGHT_DEFAULT;
   //Use parameter server to set glass height params
-  if (nh.getParam("useGHD", &useGlassHeightDetection))
+  if (ROS)
   {
-    nh.loginfo("Retrieved param");
-    if (useGlassHeightDetection) {
-      nh.loginfo("using glass height detection");
-    }
-    //    else {nh.loginfo("NOT using glass height detection");}
-  }
-  if (!useGlassHeightDetection)
-  {
-    nh.loginfo("No GH detection");
-    //If there us a glass height parameter use it
-    if (nh.getParam("GH", &defaultGlassHeight))
+    if (nh.getParam("useGHD", &useGlassHeightDetection))
     {
-      nh.loginfo("GH from params is:");
-      char output2[4];
-      itoa(defaultGlassHeight, output2, 10);
-      nh.loginfo(output2);
+      nh.loginfo("Retrieved param");
+      if (useGlassHeightDetection) {
+        nh.loginfo("using glass height detection");
+      }
+      //    else {nh.loginfo("NOT using glass height detection");}
     }
-    //Otherwise take the firmware default of 160
-    else
+    if (!useGlassHeightDetection)
     {
-      nh.loginfo("Default GH is:");
-      char output2[4];
-      itoa(defaultGlassHeight, output2, 10);
-      nh.loginfo(output2);
+      nh.loginfo("No GH detection");
+      //If there us a glass height parameter use it
+      if (nh.getParam("GH", &defaultGlassHeight))
+      {
+        nh.loginfo("GH from params is:");
+        char output2[4];
+        itoa(defaultGlassHeight, output2, 10);
+        nh.loginfo(output2);
+      }
+      //Otherwise take the firmware default of 160
+      else
+      {
+        nh.loginfo("Default GH is:");
+        char output2[4];
+        itoa(defaultGlassHeight, output2, 10);
+        nh.loginfo(output2);
+      }
     }
   }
-
   // 0. The tray is already lowered
 
   // Turn on red button LED
   digitalWrite(STARTLED, HIGH);
 
   // 1. Raise the tray --------------------------------------------
-  nh.loginfo("Raising the Tray");
+  if(ROS){nh.loginfo("Raising the Tray");}
+  if(!ROS){Serial.println("Raising the Tray");}
 
   for (short i; i < 20; i++) { // fill the US average
     USnow = measure_US();
   }
   measure_topIR();
 
-  //Use the ultrasound to stop raising the tray
+  //Use the ultrasound and top infraredto stop raising the tray
   //  while ((measure_US() > STOPDISTANCE) && (es.enUp == true))
   //  while (trayPosStp - 15> STOPDISTANCE){  // USE Tray Position + offset
   //  while(es.enUp)
@@ -84,7 +87,7 @@ void beer_time() {
 //      stepper.enable();
       update_tray_pos();
 
-      nh.spinOnce();
+      if(ROS){nh.spinOnce();}
 //      publish_sensors();
 
 
@@ -95,7 +98,7 @@ void beer_time() {
       long t3 = millis();
       if (t3 - loop_timer3 > 200) { //timer for SPB move
         update_tray_pos();
-        nh.spinOnce();
+        if(ROS){nh.spinOnce();}
 
         if (t4 - loop_timer4 > 300) { //timer for ultrasound read
           USnow = measure_US();
@@ -125,7 +128,8 @@ void beer_time() {
 
 
   //2. Begin filling! --------------------------------
-  nh.loginfo("Begin filling!");
+  if(ROS){nh.loginfo("Begin filling!");}
+  if(!ROS){Serial.println("Begin filling");}
   curRPM = 8; //lower RPM  FOR SOME REASON THIS VALUE CANNOT BE SET TO 4 WTF
   stepper.setRPM(curRPM);
   //  stepper.enable();
@@ -133,21 +137,25 @@ void beer_time() {
   digitalWrite(SOLENOID, true); //Open the solenoid valve
   delay(800);
   loop_timer3 = 0;
-  //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET - (STOPDISTANCE - TUBEPOS)){
-  //  while (trayPosStp - STOPDISTANCE < glassHeight - SURFOFFSET){
+
   while (trayPosStp - TUBEPOS < glassHeight - SURFOFFSET && es.enDown) {
     wait_time_micros = stepper.nextAction();
 
     if (wait_time_micros <= 0) {
       update_tray_pos();
-      publish_sensors();
-      nh.spinOnce();
+      if (ROS){
+        publish_sensors();
+        nh.spinOnce();
+      }
       if ((!state)) {
         return; //E-STOP
       }
-      if (nh.connected() == false) {
-        digitalWrite(SOLENOID, LOW);
-        return;
+
+      if(ROS){
+        if (nh.connected() == false) {
+          digitalWrite(SOLENOID, LOW);
+          return;
+        }
       }
 
       //FOAM ALERT stop if there is too much foam
@@ -156,7 +164,8 @@ void beer_time() {
       if ((tir < trayPosStp - glassHeight + SURFOFFSET) || (measure_US() < trayPosStp - glassHeight + SURFOFFSET))
       {
         //--If foam is within 10mm from top of glass, break
-        nh.loginfo("Foam Alert!");
+        if(ROS){nh.loginfo("Foam Alert!");}
+        if(!ROS){Serial.println("Foam Overflow");}
         break;
       }
 
@@ -191,16 +200,19 @@ void beer_time() {
         if ((!state)) {
           return; //E-STOP
         }
-        if (nh.connected() == false) {
-          digitalWrite(SOLENOID, LOW);
-          return;
+        if(ROS){
+          if (nh.connected() == false) {
+            digitalWrite(SOLENOID, LOW);
+            return;
+          }
         }
         //FOAM ALERT stop if there is too much foam
 //        measure_topIR();
         if ((tir < trayPosStp - glassHeight + SURFOFFSET) || (measure_US() < trayPosStp - glassHeight + SURFOFFSET))
         {
           //--If foam is within 10mm from top of glass, break
-          nh.loginfo("Foam Alert!");
+          if(ROS){nh.loginfo("Foam Alert!");}
+          if(!ROS){Serial.println("Foam Overflow");}
           break;
         }
         //    Use the CV reading
@@ -223,10 +235,12 @@ void beer_time() {
   digitalWrite(SOLENOID, false); //Close the solenoid valve
 
   //  3. Lower the Tray -------------------------------------
-  nh.loginfo("Lowering the tray");
+  if(ROS){nh.loginfo("Lowering the tray");}
+  if(!ROS){Serial.println("Lowering the tray");}
   home_tray();
   digitalWrite(STARTLED, LOW);
-  nh.loginfo("Process complete");
+  if(ROS){nh.loginfo("Process complete");}
+  if(!ROS){Serial.println("Process complete");}
   state = 1;
 
 }
