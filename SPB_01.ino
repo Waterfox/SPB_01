@@ -72,6 +72,7 @@ volatile int curLightVal = 175;
 int curRPM = RPM;
 float USnow = 0;
 int tir=0;
+int sir=999;
 
 unsigned wait_time_micros;
 
@@ -181,7 +182,8 @@ void publish_sensors(void) {
   long t1 = millis();
   if (t1 - pub_timer1 > TPUB1) {
     us_msg.data = (int)measure_US();
-    ir_msg.data = (int)measure_topIR();
+//    ir_msg.data = (int)measure_topIR();
+    ir_msg.data = (int)tir;
     sir_msg.data = (int)measure_sideIR();
 //    gh_msg.data = (int)glassHeight;
     pubUS.publish(&us_msg);
@@ -373,6 +375,7 @@ int measure_topIR() {
     //VL53L1X
     top_sensor.read();
     tir = top_sensor.ranging_data.range_mm;
+//    delay(50);
     return tir;
 }
 
@@ -384,7 +387,9 @@ int measure_sideIR() {
 //    return side_sensor.readRangeContinuousMillimeters();
     //VL53L1X
     side_sensor.read();
-    return side_sensor.ranging_data.range_mm;
+//    delay(50);
+    sir = side_sensor.ranging_data.range_mm;
+    return sir;
 }
 
 float measure_US() {

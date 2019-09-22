@@ -74,18 +74,17 @@ void beer_time() {
       if (nh.connected() == false) {
         return;
       }
-      if (t4 - loop_timer4 > 50) { // timer for ultrasound read
+      if (t4 - loop_timer4 > 200) { // timer for ultrasound read
         USnow = measure_US();
         loop_timer4 = t4;
-//        measure_topIR();
+        measure_topIR();
+        side_ghd (); 
+        update_tray_pos();
+        nh.spinOnce();
+        //      publish_sensors();
       }
-//      stepper.stop();
-      side_ghd (); 
-//      stepper.enable();
-      update_tray_pos();
 
-      nh.spinOnce();
-//      publish_sensors();
+
 
 
       lastDirn = spb_move(MAX_STEPS);
@@ -97,7 +96,7 @@ void beer_time() {
         update_tray_pos();
         nh.spinOnce();
 
-        if (t4 - loop_timer4 > 300) { //timer for ultrasound read
+        if (t4 - loop_timer4 > 200) { //timer for ultrasound read
           USnow = measure_US();
           measure_topIR();
           loop_timer4 = t4;
@@ -152,7 +151,7 @@ void beer_time() {
 
       //FOAM ALERT stop if there is too much foam
       //      if (ir_msg.data < trayPosStp - glassHeight + 10){
-//      tir = measure_topIR();
+      tir = measure_topIR();
       if ((tir < trayPosStp - glassHeight + SURFOFFSET) || (measure_US() < trayPosStp - glassHeight + SURFOFFSET))
       {
         //--If foam is within 10mm from top of glass, break
@@ -196,7 +195,7 @@ void beer_time() {
           return;
         }
         //FOAM ALERT stop if there is too much foam
-//        measure_topIR();
+        measure_topIR();
         if ((tir < trayPosStp - glassHeight + SURFOFFSET) || (measure_US() < trayPosStp - glassHeight + SURFOFFSET))
         {
           //--If foam is within 10mm from top of glass, break

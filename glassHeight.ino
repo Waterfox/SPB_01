@@ -9,7 +9,8 @@ void side_ghd () {
   //      nh.loginfo("GHD");
   if (useGlassHeightDetection && side_detected == false)
   {
-    int sir = measure_sideIR();
+    measure_sideIR();
+    
     //        int sir = 160;
     if (sir < SIDEIRTHRESH )
     {
