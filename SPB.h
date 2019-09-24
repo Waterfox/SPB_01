@@ -28,7 +28,7 @@
   #define RAMPS_D9_PIN   9
 #endif  
 
-#define ROS 1
+#define ROS 0
 
 //Stepper Driver
 #include "DRV8825.h"
@@ -101,3 +101,6 @@ void estop_LED(void);
 void zero_glass_arr(int,int);
 void side_ghd(void);
 void process_glass_height(void);
+void get_ros_params(void);
+void trayUpLoop(void);
+bool trayDownLoop(void);

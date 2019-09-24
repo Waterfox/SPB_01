@@ -21,6 +21,7 @@
    0: E-Stopped
    1: Ready
    2: Pouring
+   3: ROS not connected
 */
 
 using std_srvs::Empty;
@@ -71,8 +72,9 @@ float usVal = 0;
 float topIRVal = 0;
 volatile int curLightVal = 175;
 int curRPM = RPM;
-float USnow = 0;
-int tir = 0;
+float USnow; // last ultrasound value
+int tir;  // top ToF last value
+int sir; // side ToF last value
 
 unsigned wait_time_micros;
 
@@ -184,9 +186,9 @@ bool CV_LINES_EN = false;
   void publish_sensors(void) {
     long t1 = millis();
     if (t1 - pub_timer1 > TPUB1) {
-      us_msg.data = (int)measure_US();
-      ir_msg.data = (int)measure_topIR();
-      sir_msg.data = (int)measure_sideIR();
+      us_msg.data = (int)USnow;
+      ir_msg.data = (int)tir;
+      sir_msg.data = (int)sir;
       //    gh_msg.data = (int)glassHeight;
       pubUS.publish(&us_msg);
       pubIR.publish(&ir_msg);
@@ -404,14 +406,16 @@ int measure_sideIR() {
   //    return side_sensor.readRangeContinuousMillimeters();
   //VL53L1X
   side_sensor.read();
-  return side_sensor.ranging_data.range_mm;
+  sir = side_sensor.ranging_data.range_mm;
+  return sir;
 }
 
 float measure_US() {
   //  usVal = analogRead(US_PIN) * 0.05 + USAvg * 0.95;
   //  USAvg = usVal;
   //  return US2dist(USAvg);
-  return US2dist(analogRead(US_PIN)); //skip the average - this only works continuously
+  USnow = US2dist(analogRead(US_PIN)); //skip the average - this only works continuously
+  return USnow;
 }
 
 
