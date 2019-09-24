@@ -8,7 +8,7 @@ void beer_time() {
   glassStdDev = 0;
   glassN = 0; //number of glass detections
   glassHeight = 0; //default low glass height val
-  curRPM = 12; //lower RPM working: 12 max with no delay
+  curRPM = 9; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
   useGlassHeightDetection = true;
   useCVGlassHeightDetection = false;
@@ -67,6 +67,9 @@ void beer_time() {
     }
 
     wait_time_micros = stepper.nextAction();
+    long t5 = millis();
+    long t6 = millis();
+    long t3 = millis();
     long t4 = millis();
     
     if (wait_time_micros <= 0) {
@@ -74,39 +77,52 @@ void beer_time() {
       if (nh.connected() == false) {
         return;
       }
-      if (t4 - loop_timer4 > 200) { // timer for ultrasound read
-        USnow = measure_US();
-        loop_timer4 = t4;
+      if (t5 - loop_timer5 > 200) { // timer for ultrasound read
+//        USnow = measure_US();
+        loop_timer5 = t5;
         measure_topIR();
         side_ghd (); 
-        update_tray_pos();
+//        update_tray_pos();
         nh.spinOnce();
         //      publish_sensors();
       }
-
-
-
+      if (t6 - loop_timer6 > 200) { // timer for ultrasound read
+        USnow = measure_US();
+        loop_timer6 = t6;
+//        measure_topIR();
+//        side_ghd (); 
+        update_tray_pos();
+//        nh.spinOnce();
+        //      publish_sensors();
+      }
 
       lastDirn = spb_move(MAX_STEPS);
+      nh.loginfo(".");
     }
-    else if (wait_time_micros > 300) {
-      
-      long t3 = millis();
-      if (t3 - loop_timer3 > 200) { //timer for SPB move
-        update_tray_pos();
-        nh.spinOnce();
-
-        if (t4 - loop_timer4 > 200) { //timer for ultrasound read
-          USnow = measure_US();
-          measure_topIR();
-          loop_timer4 = t4;
-          side_ghd (); 
-        }
-        lastDirn = spb_move(MAX_STEPS);
-        //       USnow = measure_US();
-        loop_timer3 = t3;
-      }
-    }
+//    else if (wait_time_micros > 400) {
+//      
+//
+//      if (t4 - loop_timer4 > 200) { // timer for ultrasound read
+////        USnow = measure_US();
+//        loop_timer4 = t4;
+////        measure_topIR();
+////        side_ghd (); 
+////        update_tray_pos();
+//        nh.spinOnce();
+//        //      publish_sensors();
+//      }
+//      if (t3 - loop_timer3 > 200) { // timer for ultrasound read
+//        USnow = measure_US();
+//        loop_timer3 = t3;
+////        measure_topIR();
+////        side_ghd (); 
+//        update_tray_pos();
+////        nh.spinOnce();
+//        //      publish_sensors();
+//      }
+////       lastDirn = spb_move(MAX_STEPS);
+//    nh.loginfo("+");
+//    }
   }
 
 
