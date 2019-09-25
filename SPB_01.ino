@@ -42,7 +42,7 @@ float USAvg = 0;
 float sideIR = 0;
 endstops es;
 char inByte = '0';
-float trayPosStp = 0; //tray position from stepper count - measured from the top down
+int trayPosStp = 0; //tray position from stepper count - measured from the top down
 float cmdPosStp = 0;
 //float surfPosIR = 0; //surface position from IR measurement - measured from the sensor down
 //float surfPosUS = 0; //surface position from Ultrasound measurement - measured from the sensor down

@@ -59,7 +59,7 @@ void beer_time() {
   glassStdDev = 0;
   glassN = 0; //number of glass detections
   glassHeight = 0; //default low glass height val
-  curRPM = 9; //lower RPM working: 12 max with no delay
+  curRPM = 10; //lower RPM working: 12 max with no delay
   stepper.setRPM(curRPM);
   useGlassHeightDetection = true;
   useCVGlassHeightDetection = false;
@@ -93,12 +93,13 @@ void beer_time() {
           return;
         }
       }
-      Serial.print("-");
+//      Serial.print("-");
       trayUpLoop();
+      Serial.println(tir);
       lastDirn = spb_move(MAX_STEPS);
     }
     else if (wait_time_micros > 300) {
-      Serial.print("+");
+//      Serial.print("+");
       trayUpLoop();
 //      lastDirn = spb_move(MAX_STEPS); 
     }
@@ -143,13 +144,14 @@ void beer_time() {
 
     if (wait_time_micros <= 0) {
       if(!trayDownLoop()){break;}
-      Serial.print("-");
+//      Serial.print("-");
+        Serial.print(tir);Serial.print(" - ");Serial.println(trayPosStp);
     }
     else if (wait_time_micros > 300) {
       long t3 = millis();
       if (t3 - loop_timer3 > 200) { //timer for SPB move
-        if(!trayDownLoop()){break;}
-        Serial.print("+");
+//        if(!trayDownLoop()){break;} // Broken must move step fn out of this
+//        Serial.print("+");
         loop_timer3 = t3;
       }
     }
