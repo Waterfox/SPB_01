@@ -51,7 +51,7 @@ void side_ghd () {
     { 
       //the of glass location based on the tray position when the glass is detected
       glassHeight = trayPosStp - SIDEIRPOS;
-      if (glassHeight< MAXGLASSHEIGHT){//sometimes an initial measurement of 240 happens - hackyhack
+      if (glassHeight < MAXGLASSHEIGHT){//sometimes an initial measurement of 240 happens - hackyhack
         side_detected = true;
         if (ROS){
         nh.loginfo("GH measured: ");
@@ -62,6 +62,7 @@ void side_ghd () {
         if(!ROS){
           Serial.print("GH measured: ");Serial.println(glassHeight);
         }
+      else {glassHeight = 0;}
       }
     }
   }
