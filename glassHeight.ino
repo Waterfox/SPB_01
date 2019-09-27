@@ -48,19 +48,20 @@ void side_ghd () {
     int sir = measure_sideIR();
     //        int sir = 160;
     if (sir < SIDEIRTHRESH )
-    {
-      
-      side_detected = true;
+    { 
       //the of glass location based on the tray position when the glass is detected
       glassHeight = trayPosStp - SIDEIRPOS;
-      if (ROS){
+      if (glassHeight< MAXGLASSHEIGHT){//sometimes an initial measurement of 240 happens - hackyhack
+        side_detected = true;
+        if (ROS){
         nh.loginfo("GH measured: ");
         char output[8];
         itoa(glassHeight, output, 10);
         nh.loginfo(output);
-      }
-      if(!ROS){
-        Serial.print("GH measured: ");Serial.println(glassHeight);
+        }
+        if(!ROS){
+          Serial.print("GH measured: ");Serial.println(glassHeight);
+        }
       }
     }
   }

@@ -35,7 +35,7 @@ bool trayDownLoop()
 //      surfPos = surfPosCV;
 
   //    Use top UR reading
-  surfPos = tir;
+  surfPos = min(tir,USnow);
 
   //    CONTROL LOOP
   steps = 0;
@@ -112,7 +112,9 @@ void beer_time() {
   delay(300);
 
   process_glass_height();
-  
+  if (glassHeight < MINGLASSHEIGHT){
+    if(!ROS){Serial.print("GH below min height of ");Serial.println(MINGLASSHEIGHT);}
+    return;}
   spb_move(-500); // start moving down?
   delay(500);
   stepper.stop();
@@ -145,7 +147,7 @@ void beer_time() {
     if (wait_time_micros <= 0) {
       if(!trayDownLoop()){break;}
 //      Serial.print("-");
-        Serial.print(tir);Serial.print(" - ");Serial.println(trayPosStp);
+        Serial.print(tir);Serial.print(" - ");Serial.print(USnow);Serial.print(" - ");Serial.println(trayPosStp); // debug
     }
     else if (wait_time_micros > 300) {
       long t3 = millis();
