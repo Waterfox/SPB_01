@@ -72,9 +72,11 @@ float usVal = 0;
 float topIRVal = 0;
 volatile int curLightVal = 175;
 int curRPM = RPM;
+
 float USnow; // last ultrasound value
 int tir;  // top ToF last value
 int sir; // side ToF last value
+
 
 unsigned wait_time_micros;
 
@@ -85,8 +87,10 @@ long sub_timer4 = 0;
 long LED_timer = 0;
 bool LED_state = 0;
 long RPM_timer = 0;
-long loop_timer3 = 0;
+long loop_timer3 = 100;
 long loop_timer4 = 0;
+long loop_timer5 = 100;
+long loop_timer6 = 0;
 bool CV_EN = false;
 bool CV_LINES_EN = false;
 
@@ -161,6 +165,7 @@ bool CV_LINES_EN = false;
   }
 
 
+
   ros::Subscriber<std_msgs::UInt16> sub_cv("spb/lvl", cv_cb);
   ros::Subscriber<std_msgs::UInt16> sub_cv_lines("spb/level_lines", cv_lines_cb);
   ros::Subscriber<std_msgs::UInt16> sub_cmd("spb/cmd_pos", cmd_cb);
@@ -200,6 +205,7 @@ bool CV_LINES_EN = false;
       //    pubED.publish(&esDown_msg);
       pub_timer1 = t1;
     }
+
   }
 
   void publish_tray(void) {
@@ -387,6 +393,7 @@ void update_tray_pos(void) {
 }
 
 int measure_topIR() {
+
   //  topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
   //  topIRAvg = topIRVal;
   //  return topIR2dist(topIRAvg);
@@ -408,6 +415,7 @@ int measure_sideIR() {
   side_sensor.read();
   sir = side_sensor.ranging_data.range_mm;
   return sir;
+
 }
 
 float measure_US() {
