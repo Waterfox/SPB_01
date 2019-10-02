@@ -28,6 +28,7 @@
   #define RAMPS_D9_PIN   9
 #endif  
 
+#define ROS 0
 
 //Stepper Driver
 #include "DRV8825.h"
@@ -40,7 +41,7 @@
 #define sideCE 16 //VL6180X 
 
 // Motor steps per revolution. Most steppers are 200 steps or 1.8 degrees/step
-#define MOTOR_STEPS 400 // steps per rotation
+#define MOTOR_STEPS 400//400 // steps per rotation
 #define RPM 9 // 240 max
 #define RPM_POUR 4
 #define MAX_STEPS 400 //max steps in one loop 400
@@ -51,6 +52,8 @@
 
 #define GLASSHEIGHT_DEFAULT 160  //CHECK if glassheight is the top of the glass to the bottom (and not total stem height)
 #define GLASSBOTTOM_DETAULT 10
+#define MAXGLASSHEIGHT 220
+#define MINGLASSHEIGHT 50
 // Since microstepping is set externally, make sure this matches the selected mode
 // If it doesn't, the motor will move at a different RPM than chosen
 // 1=full step, 2=half step etc.
@@ -74,8 +77,8 @@
 #define SIDEIRPOS 125  //mm from the top
 #define TUBEPOS 180 //mm tube length
 #define STOPDISTANCE 190 //190 // How far to stop the bottom of the glass from zero (STOPDISTANCE - TUBEPOS = Xmm from bottom of glass)
-#define SETPOINT 5  // the tube will be X mm from surface
-#define SURFOFFSET  35// fill the glass this far from the glass top
+#define SETPOINT 0  // the tube will be X mm from surface
+#define SURFOFFSET  40// fill the glass this far from the glass top
 #define GLASSCVFUDGE 20 //fudge factor when measuring the glass height with CV - accounts for lens angle
 #define TPUB1 800 // publish period in ms of most topics
 #define TPUB2 500 //publish period in ms of tray topic
@@ -100,3 +103,6 @@ void estop_LED(void);
 void zero_glass_arr(int,int);
 void side_ghd(void);
 void process_glass_height(void);
+void get_ros_params(void);
+void trayUpLoop(void);
+bool trayDownLoop(void);

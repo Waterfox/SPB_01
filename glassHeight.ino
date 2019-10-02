@@ -4,6 +4,42 @@ void zero_glass_arr(int b[], int arrSize) {
   }
 }
 
+void get_ros_params()
+{
+  //Use parameter server to set glass height params
+  if (ROS)
+  {
+    if (nh.getParam("useGHD", &useGlassHeightDetection))
+    {
+      nh.loginfo("Retrieved param");
+      if (useGlassHeightDetection) {
+        nh.loginfo("using glass height detection");
+      }
+      //    else {nh.loginfo("NOT using glass height detection");}
+    }
+    if (!useGlassHeightDetection)
+    {
+      nh.loginfo("No GH detection");
+      //If there us a glass height parameter use it
+      if (nh.getParam("GH", &defaultGlassHeight))
+      {
+        nh.loginfo("GH from params is:");
+        char output2[4];
+        itoa(defaultGlassHeight, output2, 10);
+        nh.loginfo(output2);
+      }
+      //Otherwise take the firmware default of 160
+      else
+      {
+        nh.loginfo("Default GH is:");
+        char output2[4];
+        itoa(defaultGlassHeight, output2, 10);
+        nh.loginfo(output2);
+      }
+    }
+  }
+}
+
 void side_ghd () {
   //DETECT GLASS HEIGHT USING IR ***
   //      nh.loginfo("GHD");
@@ -13,14 +49,22 @@ void side_ghd () {
     
     //        int sir = 160;
     if (sir < SIDEIRTHRESH )
-    {
-      nh.loginfo("ghd333");
-      side_detected = true;
+    { 
       //the of glass location based on the tray position when the glass is detected
       glassHeight = trayPosStp - SIDEIRPOS;
-      char output[8];
-      itoa(glassHeight, output, 10);
-      nh.loginfo(output);
+      if (glassHeight < MAXGLASSHEIGHT){//sometimes an initial measurement of 240 happens - hackyhack
+        side_detected = true;
+        if (ROS){
+        nh.loginfo("GH measured: ");
+        char output[8];
+        itoa(glassHeight, output, 10);
+        nh.loginfo(output);
+        }
+        if(!ROS){
+          Serial.print("GH measured: ");Serial.println(glassHeight);
+        }
+      else {glassHeight = 0;}
+      }
     }
   }
 
@@ -61,10 +105,15 @@ void process_glass_height() {
 
   if (useGlassHeightDetection)
   {
-    nh.loginfo("glassHeight measured with ToF: ");
-    char output[8];
-    itoa(glassHeight, output, 10);
-    nh.loginfo(output);
+    if(ROS){
+      nh.loginfo("glassHeight measured with ToF: ");
+      char output[8];
+      itoa(glassHeight, output, 10);
+      nh.loginfo(output);
+    }
+    if(!ROS){
+      Serial.print("\nglassHeight measured with ToF: ");Serial.println(glassHeight);
+    }
   }
 
 

@@ -87,7 +87,8 @@ void check_start(){
 }
 
 void estop_callback(){
-  nh.loginfo("Estop Callback");
+  if(ROS){nh.loginfo("Estop Callback");}
+  if(!ROS){Serial.println("Estop Callback");}
   if (digitalRead(ESTOP)== true){
     //turn off stepper and solenoid
     state = 0; //e-stopped
