@@ -22,33 +22,39 @@ void endstops::check_endstops() {
   if (digitalRead(Z_MAX_PIN) == true){
     es.enUp = false;  //disable updward motion
     trayPosStp = Z_MAX_POS;
+    tic.haltAndSetPosition(Z_MAX_POS*STEPSPERMM);
   }
   else es.enUp=true;
   
   if (digitalRead(Z_MIN_PIN) == true){
     es.enDown = false;  //disable downward motion
     trayPosStp = Z_MIN_POS;
+    tic.haltAndSetPosition(Z_MIN_POS*STEPSPERMM); 
   }
   else es.enDown=true;
 }
 
 //interrupt callbacks can't be class members :S 
+
 void max_callback(){
-  stepper.stop();
-  stepper.disable();
+//  top switch
+//  tic.haltAndSetPosition(Z_MAX_POS*STEPSPERMM);
   if (digitalRead(Z_MAX_PIN) == true){
+    tic.haltAndSetPosition(Z_MAX_POS*STEPSPERMM);
     es.enUp = false;  //disable updward motion
-    trayPosStp = Z_MAX_POS;
+    trayPosStp = Z_MAX_POS; // 187 (measured from top down)
   }
   else es.enUp=true;
 }
 
 void min_callback(){
-  stepper.stop();
-  stepper.disable();
+//  bottom switch 
+//  tic.haltAndSetPosition(Z_MIN_POS*STEPSPERMM); 
+//  STEPSPERMM
   if (digitalRead(Z_MIN_PIN) == true){
+    tic.haltAndSetPosition(Z_MIN_POS*STEPSPERMM); 
     es.enDown = false;  //disable downward motion
-    trayPosStp = Z_MIN_POS;
+    trayPosStp = Z_MIN_POS;   // 365 (measured from top down)
   }
   else es.enDown=true;
 }
@@ -68,8 +74,8 @@ void buttons_init(){
 void check_estop(){
   if (digitalRead(ESTOP)==true){
     state = 0; //e-stopped
-    stepper.stop();
-    stepper.disable();
+//    tic.haltAndHold();
+    spb_v(0);
     digitalWrite(SOLENOID,LOW);
   }
   else {
@@ -86,19 +92,40 @@ void check_start(){
   }
 }
 
+void check_tof_start(){
+   measure_sideIR();
+  if (sir < SIDEIRTHRESH){
+    //start
+    long TofStartTimer = millis();
+    int fakeHits = 0;
+    int maxFakeHits = 20;
+    while ((sir < SIDEIRTHRESH)||(fakeHits<maxFakeHits)){
+      measure_sideIR();
+      if (sir>SIDEIRTHRESH){fakeHits++;};
+      delay(30);
+    }
+    long t1 = millis();
+    if ((t1 - TofStartTimer > 2000) && (t1 - TofStartTimer < 5000)){
+      state = 2;
+      beer_time();
+    }
+    TofStartTimer = 0;
+  }
+}
+
 void estop_callback(){
-  if(ROS){nh.loginfo("Estop Callback");}
-  if(!ROS){Serial.println("Estop Callback");}
+
+  Serial.println("Estop Callback");
   if (digitalRead(ESTOP)== true){
     //turn off stepper and solenoid
-    state = 0; //e-stopped
-    stepper.stop();
-    stepper.disable();
+    state = 0; //e-stoppe);
+//    tic.haltAndHold();
+    spb_v(0);
     digitalWrite(SOLENOID,LOW);
     
   }
   else {
-//    Serial.println("ESTOP Released");
+    Serial.println("ESTOP Released");
     state = 1; //waiting
     digitalWrite(STARTLED, LOW);
 //    home_tray();

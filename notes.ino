@@ -14,6 +14,10 @@
  *    -Foam - IR reads correct / US reads high or noisy
  *    -soln: take min 
  * See if startMove can be called in nonblocked section
+ * 
+ * July 09 2020
+ * Completed Integrating TIC T500 stepper controller
+ * Removed ROS
  */
 
  

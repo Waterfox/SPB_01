@@ -1,19 +1,15 @@
 #include <Arduino.h>
 #include "SPB.h"
 #include "endstops.h"
-#include "BasicStepperDriver.h"
 #include <Adafruit_NeoPixel.h>
-#include <ros.h>
-#include <std_msgs/UInt16.h>
-#include <std_msgs/Bool.h>
 #include <stdlib.h>
-#include <std_srvs/Empty.h>
 #include <Wire.h>
 #include <VL53L1X.h>
-//#include <VL6180X.h>
+#include <Tic.h>
 
 
 /*
+ * BRANCH FOR USE WITH TIC500 * 
    rosrun rosserial_python serial_node.py /dev/ttyACM0 _baud:=500000
    NOTE: direction changed for tmc 2208
 
@@ -24,13 +20,11 @@
    3: ROS not connected
 */
 
-using std_srvs::Empty;
 
-
-DRV8825 stepper(MOTOR_STEPS, Z_DIR_PIN, Z_STEP_PIN, Z_ENABLE_PIN, MODE0, MODE1, MODE2);
-
+TicSerial tic(Serial3);
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
 
 VL53L1X top_sensor;
 VL53L1X side_sensor;
@@ -41,37 +35,29 @@ float topIRAvg = 0;
 float USAvg = 0;
 float sideIR = 0;
 endstops es;
-char inByte = '0';
 int trayPosStp = 0; //tray position from stepper count - measured from the top down
-float cmdPosStp = 0;
-//float surfPosIR = 0; //surface position from IR measurement - measured from the sensor down
-//float surfPosUS = 0; //surface position from Ultrasound measurement - measured from the sensor down
 int surfPosCV = 0;  //surface position from computer vision output
 int linePosCV = 0;  //line measurement from CV output
 int surfPos = 0;  //surface position used in control calculation
 
 int lastDirn = 0;
 int steps = 0;
+float delta = 0; //error in P control loop
 int state = 0; //0: Estopped, 1:Waiting, 2:Pouring
 
 int useGlassHeightDetection = true;
-int useCVGlassHeightDetection = false;
+//int useCVGlassHeightDetection = false;
 int defaultGlassHeight = GLASSHEIGHT_DEFAULT;
 int defaultGlassBottom = GLASSBOTTOM_DETAULT; //used in the future to elminate ultrasound
 bool side_detected = false;
 int glassTop = 0;
 int glassBot = 0;
 int glassHeight = GLASSHEIGHT_DEFAULT;  //top of glass to the bottom (not stem height)
-int glassN = 0; //counts how many times the edge us detected
-const int L = 50; // max number of gh measurements
-int glassArr[L]; //array of gh measurements
-int glassDev[L]; //deviation from mean
-float glassAv = 0; //average gh
-float glassStdDev = 0; //mean deviation
 float usVal = 0;
 float topIRVal = 0;
 volatile int curLightVal = 175;
-int curRPM = RPM;
+long v_travel = 80000000;
+
 
 float USnow; // last ultrasound value
 int tir;  // top ToF last value
@@ -80,10 +66,7 @@ int sir; // side ToF last value
 
 unsigned wait_time_micros;
 
-long pub_timer1 = 0;
-long pub_timer2 = 0;
-long sub_timer3 = 0;
-long sub_timer4 = 0;
+
 long LED_timer = 0;
 bool LED_state = 0;
 long RPM_timer = 0;
@@ -95,127 +78,6 @@ bool CV_EN = false;
 bool CV_LINES_EN = false;
 
 
-
-  ros::NodeHandle  nh;
-
-
-  void cv_cb(const std_msgs::UInt16 & lvl_msg) {
-    surfPosCV = lvl_msg.data;
-    long t3 = millis();
-    if (t3 - sub_timer3 < 1000) { //if we've received a topic in the last 1s, unlock
-      CV_EN = true;
-    }
-    else {
-      CV_EN = false;
-    }
-    sub_timer3 = t3;
-  }
-
-  void cv_lines_cb(const std_msgs::UInt16 & lvl_line_msg) {
-    linePosCV = lvl_line_msg.data;
-    long t4 = millis();
-    if (t4 - sub_timer4 < 300) { //if we've received a topic in the last 300ms, unlock
-      CV_LINES_EN = true;
-    }
-    else {
-      CV_LINES_EN = false;
-    }
-    sub_timer4 = t4;
-  }
-
-  void cmd_cb(const std_msgs::UInt16 & cmd_msg) {
-    //controls the tray from a rostopic
-    cmdPosStp = cmd_msg.data;
-    // if the cmd value is not zero and in range
-    if (cmdPosStp != 0 && cmdPosStp > Z_MAX_POS && cmdPosStp < Z_MIN_POS ) {
-      while (abs(cmdPosStp - trayPosStp) > 1) {
-        unsigned wait_time_micros = stepper.nextAction();
-        if (wait_time_micros <= 0) {
-          update_tray_pos();
-          steps = ((cmdPosStp - trayPosStp) * -STEPSPERMM);
-          lastDirn = spb_move(steps);
-        }
-        else {
-          delay(1);
-        }
-      }
-    }
-    stepper.disable();
-  }
-
-  void cmd_valve_cb(const std_msgs::Bool & cmd_valve_msg) {
-    //open the valve if publishing true
-    if (cmd_valve_msg.data) {
-      digitalWrite(SOLENOID, true);
-    }
-    else {
-      digitalWrite(SOLENOID, false);
-    }
-  }
-
-  void cmd_led_cb(const std_msgs::UInt16 & cmd_led_msg) {
-    curLightVal = cmd_led_msg.data;
-    set_lights(curLightVal);
-  }
-
-  void beer_callback(const Empty::Request & req, Empty::Response & res)
-  {
-    // Simulate function running for a non-deterministic amount of time
-    beer_time();
-  }
-
-
-
-  ros::Subscriber<std_msgs::UInt16> sub_cv("spb/lvl", cv_cb);
-  ros::Subscriber<std_msgs::UInt16> sub_cv_lines("spb/level_lines", cv_lines_cb);
-  ros::Subscriber<std_msgs::UInt16> sub_cmd("spb/cmd_pos", cmd_cb);
-  ros::Subscriber<std_msgs::Bool> sub_valve("spb/cmd_valve", cmd_valve_cb);
-  ros::Subscriber<std_msgs::UInt16> sub_led("spb/cmd_led", cmd_led_cb);
-  std_msgs::UInt16 us_msg;
-  std_msgs::UInt16 ir_msg;
-  std_msgs::UInt16 sir_msg;
-  std_msgs::UInt16 gh_msg;
-  std_msgs::UInt16 tp_msg;
-  std_msgs::Bool esUp_msg;
-  std_msgs::Bool esDown_msg;
-  ros::Publisher pubUS("spb/us", &us_msg);
-  ros::Publisher pubIR("spb/ir", &ir_msg);
-  ros::Publisher pubSIR("spb/sir", &sir_msg);
-  //ros::Publisher pubGH("spb/glass_height", &gh_msg);
-  ros::Publisher pubTP("spb/tray_pos", &tp_msg);
-  //ros::Publisher pubEU("spb/esUp", &esUp_msg);
-  //ros::Publisher pubED("spb/esDown", &esDown_msg);
-  ros::ServiceServer<Empty::Request, Empty::Response> beertime_server("beertime", &beer_callback);
-
-
-  void publish_sensors(void) {
-    long t1 = millis();
-    if (t1 - pub_timer1 > TPUB1) {
-      us_msg.data = (int)USnow;
-      ir_msg.data = (int)tir;
-      sir_msg.data = (int)sir;
-      //    gh_msg.data = (int)glassHeight;
-      pubUS.publish(&us_msg);
-      pubIR.publish(&ir_msg);
-      pubSIR.publish(&sir_msg);
-      //    pubGH.publish(&gh_msg);
-      //    esUp_msg.data = es.enUp;
-      //    esDown_msg.data = es.enDown;
-      //    pubEU.publish(&esUp_msg);
-      //    pubED.publish(&esDown_msg);
-      pub_timer1 = t1;
-    }
-
-  }
-
-  void publish_tray(void) {
-    long t2 = millis();
-    if (t2 - pub_timer2  > TPUB2) {
-      tp_msg.data = (int)trayPosStp;
-      pubTP.publish(&tp_msg);
-      pub_timer2 = t2;
-    }
-  }
 
 //**********************************************
 void setup() {
@@ -259,13 +121,13 @@ void setup() {
 
   pinMode(SOLENOID, OUTPUT);
   pinMode(US_PWR, OUTPUT);
+  pinMode(TICPWR, OUTPUT);
 
   //Turn off the Valve
   digitalWrite(SOLENOID, LOW);
 
-  //Init the stepper
-  stepper.begin(curRPM, MICROSTEPS);
-  stepper.enable();
+  //Turn on the TIC T500 Stepper Driver
+  digitalWrite(TICPWR, HIGH);
 
   // Init the endstops and buttons
   es.check_endstops();
@@ -278,48 +140,34 @@ void setup() {
   pixels.begin();
   set_lights(curLightVal);
 
-  if (ROS)
-  {
-    //Init ROS
-    nh.getHardware()->setBaud(BAUDRATE);
-    nh.initNode();
-    nh.subscribe(sub_cv);
-    nh.subscribe(sub_cv_lines);
-    nh.subscribe(sub_cmd);
-    nh.subscribe(sub_valve);
-    nh.subscribe(sub_led);
-    nh.advertise(pubUS);
-    nh.advertise(pubIR);
-    nh.advertise(pubSIR);
-    //  nh.advertise(pubGH);
-    nh.advertise(pubTP);
-    //  nh.advertise(pubEU);
-    //  nh.advertise(pubED);
-    nh.advertiseService(beertime_server);
-    check_estop();
-  
-    // Home the Tray
-    if (tVLinitfail) { nh.loginfo("topVL sensor init fail");}
-    if (sVLinitfail) { nh.loginfo("sideVL sensor init fail");}
-    nh.loginfo("Home the tray");
-  }
-  else
-  {
-    Serial.begin(115200);
-    if (tVLinitfail){
-      Serial.println("Top VL sensor fail");
-    }
-    if (sVLinitfail){
-      Serial.println("side VL sensor fail");
-    }
-    Serial.println("Home the Tray");
-  }
 
 
-  home_tray();
+  Serial.begin(115200);
+  if (tVLinitfail){
+    Serial.println("Top VL sensor fail");
+  }
+  if (sVLinitfail){
+    Serial.println("side VL sensor fail");
+  }
+  Serial.println("Home the Tray");
   
 
+  //TIC 500 is connected to Serial3
+  Serial3.begin(57600);
+  // Give the Tic some time to start up.
+  delay(20);
+  tic.haltAndSetPosition(0);
+  tic.setProduct(TicProduct::T500);
+  tic.setStepMode(TicStepMode::Microstep8);
+  tic.setMaxSpeed(80000000);  //12V MAX Speed
+  
+  
+  tic.exitSafeStart();
+  home_tray_zero();
+  
 }
+
+
 
 //----------------------------------------------
 void loop() {
@@ -327,19 +175,13 @@ void loop() {
   check_estop();
   if (state > 0) {
     check_start();
-    if (ROS) {publish_sensors();}
+    check_tof_start();
+    // ADD CHECK TOF START
   }
-  nh.spinOnce();
+  
   update_tray_pos();
-  if (ROS){check_nh();}
   estop_LED();
 
-  //  wait_time_micros = stepper.nextAction();
-  //  if (wait_time_micros <= 0) {
-  //    stepper.disable();
-  //  }
-  // else {delay(1);}
-  //  if (VLinitfail) { nh.loginfo("VL sensor init fail"); delay(2000);}
   delay(1);
 
 }
@@ -348,11 +190,6 @@ void loop() {
 
 
 
-//convert IR measurement to distance in mm (distance from sensor)
-float topIR2dist(float topVal) {
-  //  return(26734.0*pow(topVal,-0.883));
-  return 0.0038 * topVal * topVal - 2.544 * topVal + 588.85;
-}
 
 //conver ultrasound measurement to distance in mm (distance from sensor)
 float US2dist(int usVal) {
@@ -360,57 +197,48 @@ float US2dist(int usVal) {
 }
 
 
-//Check endstop conditions and move the stepper motor
-//return direction of steps moved
-int spb_move(int move_steps) {
-  if (abs(move_steps) > DEADBAND) {
-    if (move_steps > MAX_STEPS && es.enUp == true) {
-      stepper.enable();
-      stepper.startMove(-MAX_STEPS);
-      return 1;
+void spb_v(long v) {
+  v= -v; // reversing v: velocity so that "+ve" is up, "-ve" v is down at function input
+  if ((v<0 && es.enUp == true)||(v>0 && es.enDown == true) ){tic.setTargetVelocity(v);}
+  else if (v==0) {tic.setTargetVelocity(0);}
+  else {
+    Serial.println("Move not valid!");
+    Serial.print("enUp: ");Serial.print(es.enUp);Serial.print("   enDown: ");Serial.println(es.enDown);
     }
-    else if (move_steps < -MAX_STEPS && es.enDown == true) {
-      stepper.enable();
-      stepper.startMove(+MAX_STEPS);
-      return -1;
-    }
-    else if ((move_steps > 0 && es.enUp == true) || (move_steps < 0 && es.enDown == true)) {
-      stepper.enable();
-      stepper.startMove(-move_steps);
-      return ((move_steps > 0) - (move_steps < 0));
-    }
-    else {
-      return 0;
-    }
+}
+
+bool update_tray_pos(void) 
+//updates the tray position in the global trayPosStp variable
+//stops the motor if the tray is too close to an endstop and returns true.
+{
+  trayPosStp = tic.getCurrentPosition()/(STEPSPERMM);
+  /*
+  if (trayPosStp > (Z_MIN_POS - ES_SAFETY_DIST))
+  {
+    tic.setTargetVelocity(0);
+    Serial.println("Z_MIN_POS ERR");
+    return 1;
   }
+  
+  if(trayPosStp < (Z_MAX_POS + ES_SAFETY_DIST))
+  {
+    tic.setTargetVelocity(0);
+    Serial.println("Z_MAX_POS ERR");
+    return 1;
+  }
+  */
+  
   return 0;
 }
 
-void update_tray_pos(void) {
-  trayPosStp = trayPosStp - ((stepper.step_count * lastDirn) / 100.0); // distance travelled in mm
-  stepper.step_count = 0;
-  if (ROS){publish_tray();}
-}
-
 int measure_topIR() {
-
-  //  topIRVal = analogRead(TOP_IR_PIN) * 0.05 + topIRAvg * 0.95;
-  //  topIRAvg = topIRVal;
-  //  return topIR2dist(topIRAvg);
-  //    return topIR2dist(float(analogRead(TOP_IR_PIN))); ORIGINAL
-
   //VL53L1X
   top_sensor.read();
   tir = top_sensor.ranging_data.range_mm;
   return tir;
 }
 
-int measure_sideIR() {
-  //  return analogRead(SIDE_IR_PIN); ORGINAL
-
-  //VL6180X
-  //    return side_sensor.readRangeSingleMillimeters();
-  //    return side_sensor.readRangeContinuousMillimeters();
+int measure_sideIR() {;
   //VL53L1X
   side_sensor.read();
   sir = side_sensor.ranging_data.range_mm;
@@ -419,50 +247,59 @@ int measure_sideIR() {
 }
 
 float measure_US() {
-  //  usVal = analogRead(US_PIN) * 0.05 + USAvg * 0.95;
-  //  USAvg = usVal;
-  //  return US2dist(USAvg);
   USnow = US2dist(analogRead(US_PIN)); //skip the average - this only works continuously
   return USnow;
 }
 
-
-void home_tray()
+void home_tray_zero()
+//lowers the tray until the lower end-stop is touched and the system-zeros
 {
-  volatile bool tryRPM = false;
-  curRPM = 12; //raise RPM 12 working
-  stepper.setRPM(curRPM);
-
+  es.check_endstops();
+  
   while (es.enDown) {
-
     if (!state) {
       break;
     }
-    wait_time_micros = stepper.nextAction();
-    if (wait_time_micros <= 0) {
-      update_tray_pos();
-      if (ROS){nh.spinOnce();}
-      lastDirn = spb_move(-MAX_STEPS);
-    }
-
-    else if (wait_time_micros > 100) { // EXPERIMENT put a timer in here to spin the node
-      if (tryRPM == false) {
-        tryRPM = true;
-        stepper.stop();
-        stepper.setRPM(curRPM);
-      }
-      update_tray_pos();
-      if (ROS){nh.spinOnce();}
-      lastDirn = spb_move(-MAX_STEPS);
-      //      nh.loginfo(stepper.getCurrentRPM());s
-    }
-
-
+    spb_v(-v_travel/4);
+  
   }
-  //  nh.loginfo("home_tray complete");
-  stepper.disable();
+  //stepper contacts lower end-stop - triggers min callback trayPosStp = Z_MIN_POS;
+  delay(500);
+  tic.exitSafeStart(); // just in case something happens
+  delay(500);
+  Serial.print("Home Tray Zero complete, tray at ");Serial.print(trayPosStp);Serial.println("mm");
+
+//  long targetPosition = (Z_MIN_POS-50)*STEPSPERMM;
+//  tic.setTargetPosition(targetPosition);
+//  while (tic.getCurrentPosition()/(STEPSPERMM) > targetPosition)
+//  {
+//    tic.setTargetPosition(targetPosition);
+//    delay(100);
+//  }
+//  Serial.println("ye has done");
+  return;
 }
 
+void home_tray()
+//lowers the tray to 5mm above lower end-stop
+{
+  es.check_endstops();
+  long targetPosition = (Z_MIN_POS-5)*STEPSPERMM; // move 5mm away from lower endstop
+  if (update_tray_pos()){return;}
+  tic.setTargetPosition(targetPosition);
+  while (es.enDown && (trayPosStp < (Z_MIN_POS-10))) 
+  //run this loop while the stepper is beyond 10mm from Estop
+  {
+    if (!state) {
+      break;
+    }
+    if (update_tray_pos()){break;}
+    Serial.print(trayPosStp);Serial.print("target ");Serial.println(Z_MIN_POS-5);
+    delay(1);
+  }
+  Serial.print("Home Tray complete, tray at ");Serial.print(trayPosStp);Serial.println("mm");
+  return;
+}
 
 void set_lights(int lightVal) {
   for (int i = 0; i < NUMPIXELS; i++) {
@@ -471,14 +308,6 @@ void set_lights(int lightVal) {
   pixels.show();
 }
 
-void check_nh() {
-  if ((!(nh.connected())) || (!state)) {
-    state = 3;
-  }
-  else if (!state) {
-    state = 1;
-  }
-}
 
 void estop_LED() {
   //ESTOP CONDITION
