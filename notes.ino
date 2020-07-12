@@ -18,6 +18,7 @@
  * July 09 2020
  * Completed Integrating TIC T500 stepper controller
  * Removed ROS
+ * Touchless operation
  */
 
  

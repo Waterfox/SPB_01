@@ -56,7 +56,7 @@ int glassHeight = GLASSHEIGHT_DEFAULT;  //top of glass to the bottom (not stem h
 float usVal = 0;
 float topIRVal = 0;
 volatile int curLightVal = 175;
-long v_travel = 80000000;
+long v_travel = 100000000;
 
 
 float USnow; // last ultrasound value
@@ -159,7 +159,7 @@ void setup() {
   tic.haltAndSetPosition(0);
   tic.setProduct(TicProduct::T500);
   tic.setStepMode(TicStepMode::Microstep8);
-  tic.setMaxSpeed(80000000);  //12V MAX Speed
+  tic.setMaxSpeed(120000000);  //12V MAX Speed
   
   
   tic.exitSafeStart();
@@ -177,6 +177,9 @@ void loop() {
     check_start();
     check_tof_start();
     // ADD CHECK TOF START
+  }
+  else if (state==0){
+    check_clean();
   }
   
   update_tray_pos();

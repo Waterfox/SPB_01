@@ -105,3 +105,4 @@ bool trayUpLoop(void);
 bool trayDownLoop(void);
 void spb_v(long);
 void home_tray_zero(void);
+void check_clean(void);

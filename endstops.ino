@@ -93,7 +93,7 @@ void check_start(){
 }
 
 void check_tof_start(){
-   measure_sideIR();
+  measure_sideIR();
   if (sir < SIDEIRTHRESH){
     //start
     long TofStartTimer = millis();
@@ -111,6 +111,18 @@ void check_tof_start(){
     }
     TofStartTimer = 0;
   }
+}
+
+void check_clean(){
+  if (digitalRead(STARTBTN)==false){
+    long cleanStartTimer = millis();
+    while (digitalRead(STARTBTN)==false){
+      if (millis() - cleanStartTimer > 2000){
+        digitalWrite(SOLENOID, true); //Open the solenoid valve
+      }
+    }
+  }
+  digitalWrite(SOLENOID, false); //Open the solenoid valve
 }
 
 void estop_callback(){

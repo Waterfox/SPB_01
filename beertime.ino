@@ -92,7 +92,7 @@ void beer_time() {
     }
       spb_v(v_travel);
       if (trayUpLoop()){return;}
-      if (trayPosStp < Z_MAX_POS+5){break;} //don't hit top endstop
+      if (trayPosStp < Z_MAX_POS+15){break;} //don't hit top endstop
       delay(1);
       
 
